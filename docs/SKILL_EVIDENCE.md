@@ -1,7 +1,8 @@
-# deepin-skills 调用实证（活动硬性要求）
+# deepin-skills 调用实证（归档）
 
-> 本文件用于归档「AI 调用 deepin Skills」的对话/流程实证，供论坛发帖附图引用。
-> 生成时间：2026-08-18
+> 本文件为「AI 调用 deepin Skills」的详细归档。**发帖所需的 skill 实证已整合进
+> `docs/FORUM_POST.md` 的「三、deepin-skills 调用实证」章节**，发帖只需参考该文档。
+> 本文件保留作内部归档与截图依据，生成时间：2026-08-18。
 
 ## 1. deepin-skills 安装事实（可复现）
 
@@ -40,7 +41,8 @@ deepin-skills 的 `dtk-development` 框架 skill 获取 Qt/DBus 构建规范。
 - 仓库已推送：`https://github.com/testerxydw/dde-grand-search-convert`
   （`git push -u origin main` 成功，SSH 认证通过）
 - 双架构自动构建：`.github/workflows/build.yml`（amd64 原生 + arm64 QEMU 容器）
-- 本地编译验证：amd64 编译通过，dbus-send 联调各功能返回正确结果卡片。
+- 本地编译验证：amd64 编译通过，dbus-send 联调各功能返回正确结果卡片；
+  并已打包为 `convert-search-plugin_1.0.0_amd64.deb` 安装 + daemon 端到端验证通过。
 
 ## 4. 功能验证摘要（本地 dbus-send 联调）
 
