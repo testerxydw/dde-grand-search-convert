@@ -1,3 +1,16 @@
 build/
 *.o
 *.user
+
+# Debian 打包构建产物（dpkg-buildpackage 生成，非源码）
+obj-*/
+debian/.debhelper/
+debian/*.debhelper.log
+debian/*.substvars
+debian/debhelper-build-stamp
+debian/files
+debian/*/  # 临时安装树 debian/<pkg>/
+*.buildinfo
+*.changes
+*.deb
+
