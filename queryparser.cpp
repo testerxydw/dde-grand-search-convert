@@ -35,8 +35,8 @@ static const QStringList kUnitWords = {
     "kg", "千克", "公斤", "g", "克", "lb", "lbs", "磅", "oz", "盎司", "斤", "两",
     // 面积
     "m2", "平方米", "km2", "平方千米", "acre", "英亩", "公顷", "亩",
-    // 体积
-    "l", "升", "ml", "毫升", "gal", "加仑",
+    // 体积（注意：单字母 l 易子串误判，改用中文/明确词）
+    "升", "ml", "毫升", "gal", "加仑", "liter", "litre",
     // 速度
     "kmh", "kph", "km/h", "mph", "英里每小时",
     // 数据
@@ -74,9 +74,10 @@ static bool containsTimeKeyword(const QString &s)
 }
 
 // 程序员工具关键词（中文名 + 英文名）
+// 注意：hex/bin/oct 属进制转换（Calc），不在此列，避免与进制转换冲突
 static const QStringList kProgramKeywords = {
     "base64", "ascii", "url", "hash", "md5", "sha1", "sha256", "sha",
-    "hex", "编码", "哈希", "时间戳", "当前时间戳", "毫秒时间戳",
+    "编码", "哈希", "时间戳", "当前时间戳", "毫秒时间戳",
 };
 
 static bool containsProgramKeyword(const QString &s)
@@ -230,9 +231,10 @@ Parsed parse(const QString &input)
     }
 
     // 6) 程序员工具：含 base64/ascii/url/hash/时间戳 等关键词
+    // 保留原始大小写（ascii A 与 a 结果不同）
     if (containsProgramKeyword(s) && !containsTimeKeyword(s)) {
         p.type = Type::Program;
-        p.text = s;
+        p.text = p.raw;
         return p;
     }
 
@@ -243,7 +245,7 @@ Parsed parse(const QString &input)
         QRegularExpression dateRe(R"(\d{4}[-./]\d{1,2}[-./]\d{1,2})");
         if (dateRe.match(s).hasMatch() || containsDateKeyword(s)) {
             p.type = Type::DateTime;
-            p.text = s;
+            p.text = p.raw;
             return p;
         }
     }
