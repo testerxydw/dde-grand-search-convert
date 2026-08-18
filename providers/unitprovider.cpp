@@ -15,6 +15,45 @@ QString norm(const QString &u)
     s.remove('.');
     return s;
 }
+
+// 单位 → 中文说明（按系统语言返回，当前优先中文）
+static const QHash<QString, QString> kUnitDisplay = {
+    // 长度
+    {"m", "米"}, {"km", "千米/公里"}, {"cm", "厘米"}, {"mm", "毫米"},
+    {"inch", "英寸"}, {"in", "英寸"}, {"feet", "英尺"}, {"ft", "英尺"},
+    {"yard", "码"}, {"yd", "码"}, {"mile", "英里"},
+    // 重量
+    {"kg", "千克/公斤"}, {"g", "克"}, {"mg", "毫克"},
+    {"lb", "磅"}, {"lbs", "磅"}, {"oz", "盎司"},
+    {"斤", "市斤"}, {"两", "市两"}, {"t", "吨"}, {"吨", "吨"},
+    // 面积
+    {"m2", "平方米"}, {"km2", "平方千米"}, {"cm2", "平方厘米"},
+    {"公顷", "公顷"}, {"ha", "公顷"}, {"亩", "亩"}, {"acre", "英亩"},
+    // 体积
+    {"l", "升"}, {"liter", "升"}, {"litre", "升"}, {"ml", "毫升"},
+    {"gal", "加仑"}, {"m3", "立方米"},
+    // 速度
+    {"kmh", "千米每小时"}, {"kph", "千米每小时"}, {"km/h", "千米每小时"},
+    {"mph", "英里每小时"}, {"mps", "米每秒"}, {"米每秒", "米每秒"},
+    {"knot", "节"}, {"节", "节"},
+    // 数据
+    {"b", "字节"}, {"kb", "千字节"}, {"mb", "兆字节"}, {"gb", "吉字节"}, {"tb", "太字节"},
+};
+
+static bool isChineseLocale()
+{
+    return QLocale().language() == QLocale::Chinese;
+}
+
+// 输出格式：原单位（中文名），便于用户理解缩写含义
+static QString unitDisplay(const QString &u)
+{
+    QString n = norm(u);
+    QString cn = kUnitDisplay.value(n);
+    if (cn.isEmpty())
+        return u; // 未知单位保持原样
+    return isChineseLocale() ? QString("%1（%2）").arg(u).arg(cn) : u;
+}
 } // namespace
 
 double UnitProvider::lengthFactor(const QString &u, bool &ok)
@@ -114,12 +153,12 @@ bool UnitProvider::tempConvert(double value, const QString &fromScale,
     return true;
 }
 
-QString UnitProvider::tempLabel(const QString &scale)
+static QString tempLabel(const QString &scale)
 {
     QString s = norm(scale);
-    if (s == "c") return "°C";
-    if (s == "f") return "°F";
-    if (s == "k") return "K";
+    if (s == "c") return isChineseLocale() ? "°C（摄氏度）" : "°C";
+    if (s == "f") return isChineseLocale() ? "°F（华氏度）" : "°F";
+    if (s == "k") return isChineseLocale() ? "K（开尔文）" : "K";
     return scale;
 }
 
@@ -173,8 +212,8 @@ QList<ResultBuilder::Item> UnitProvider::convert(double value, const QString &fr
             ResultBuilder::Item it;
             it.key = QString("unit-%1-%2-%3").arg(cat).arg(value).arg(norm(tt));
             it.name = QString("%1 %2 = %3 %4")
-                          .arg(QLocale().toString(value, 'f', 2)).arg(f)
-                          .arg(QLocale().toString(out, 'f', 4)).arg(tt);
+                          .arg(QLocale().toString(value, 'f', 2)).arg(unitDisplay(from))
+                          .arg(QLocale().toString(out, 'f', 4)).arg(unitDisplay(tt));
             it.icon = "preferences-system";
             it.type = type;
             items.append(it);

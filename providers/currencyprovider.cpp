@@ -17,6 +17,27 @@ const QStringList CurrencyProvider::kDefaultTargets = {
     "CNY", "USD", "EUR", "JPY", "GBP", "HKD",
 };
 
+// 货币代码 → 中文名称（按系统语言返回）
+static const QHash<QString, QString> kCurrencyDisplay = {
+    {"CNY", "人民币"}, {"USD", "美元"}, {"EUR", "欧元"},
+    {"JPY", "日元"}, {"GBP", "英镑"}, {"HKD", "港币"},
+    {"KRW", "韩元"},
+};
+
+static bool isChineseLocale()
+{
+    return QLocale().language() == QLocale::Chinese;
+}
+
+static QString currencyDisplay(const QString &code)
+{
+    QString upper = code.toUpper();
+    QString cn = kCurrencyDisplay.value(upper);
+    if (cn.isEmpty())
+        return upper;
+    return isChineseLocale() ? QString("%1（%2）").arg(upper).arg(cn) : upper;
+}
+
 // 内置静态汇率（相对 CNY），作为离线降级。数值为示意，联网后会被覆盖。
 const QHash<QString, double> kStaticRates = {
     {"CNY", 1.0}, {"USD", 7.25}, {"EUR", 7.85}, {"JPY", 0.048},
@@ -71,8 +92,8 @@ QList<ResultBuilder::Item> CurrencyProvider::convert(double value, const QString
         ResultBuilder::Item it;
         it.key = QString("cur-%1-%2-%3").arg(from.toUpper()).arg(value).arg(tc);
         it.name = QString("%1 %2 = %3 %4")
-            .arg(QLocale().toString(value, 'f', 2)).arg(from.toUpper())
-            .arg(QLocale().toString(out, 'f', 2)).arg(tc);
+            .arg(QLocale().toString(value, 'f', 2)).arg(currencyDisplay(from.toUpper()))
+            .arg(QLocale().toString(out, 'f', 2)).arg(currencyDisplay(tc));
         it.icon = "preferences-system"; // 货币图标主题名，依环境
         it.type = "convert/currency";
         items.append(it);

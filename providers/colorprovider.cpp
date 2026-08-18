@@ -8,6 +8,22 @@
 
 namespace {
 
+static bool isChineseLocale()
+{
+    return QLocale().language() == QLocale::Chinese;
+}
+
+static QString colorLabel(const QString &key)
+{
+    if (!isChineseLocale()) return key;
+    if (key == "HEX") return "HEX（十六进制色值）";
+    if (key == "RGB") return "RGB（红绿蓝）";
+    if (key == "HSL") return "HSL（色相/饱和度/亮度）";
+    return key;
+}
+
+
+
 struct RGB { int r = 0, g = 0, b = 0; };
 struct HSL { int h = 0, s = 0, l = 0; };
 
@@ -132,9 +148,9 @@ QList<ResultBuilder::Item> ColorProvider::convert(const QString &colorRaw)
         it.type = type;
         items.append(it);
     };
-    add("color-hex", "HEX: " + toHex(rgb), "convert/color-hex");
-    add("color-rgb", "RGB: " + toRgbText(rgb), "convert/color-rgb");
-    add("color-hsl", QString("HSL: hsl(%1, %2%, %3%)").arg(hsl.h).arg(hsl.s).arg(hsl.l),
+    add("color-hex", colorLabel("HEX") + ": " + toHex(rgb), "convert/color-hex");
+    add("color-rgb", colorLabel("RGB") + ": " + toRgbText(rgb), "convert/color-rgb");
+    add("color-hsl", colorLabel("HSL") + QString(": hsl(%1, %2%, %3%)").arg(hsl.h).arg(hsl.s).arg(hsl.l),
         "convert/color-hsl");
     return items;
 }

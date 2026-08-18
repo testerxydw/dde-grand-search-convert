@@ -34,7 +34,6 @@ private:
     // 温度换算返回目标标度下的数值；标度：c/f/k
     static bool tempConvert(double value, const QString &fromScale,
                             const QString &toScale, double &out);
-    static QString tempLabel(const QString &scale);
 };
 
 #endif // UNITPROVIDER_H

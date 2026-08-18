@@ -12,6 +12,11 @@
 
 namespace {
 
+static bool isChineseLocale()
+{
+    return QLocale().language() == QLocale::Chinese;
+}
+
 // 提取「动作 + 内容」：如 base64 decode xxx / md5 xxx / url encode xxx
 struct Req {
     QString action;  // encode/decode/hash/ascii/time

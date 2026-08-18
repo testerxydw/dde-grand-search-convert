@@ -9,6 +9,23 @@
 
 namespace {
 
+static bool isChineseLocale()
+{
+    return QLocale().language() == QLocale::Chinese;
+}
+
+static QString baseLabel(const QString &key)
+{
+    if (!isChineseLocale()) return key;
+    if (key == "HEX") return "HEX（十六进制）";
+    if (key == "BIN") return "BIN（二进制）";
+    if (key == "OCT") return "OCT（八进制）";
+    if (key == "DEC") return "DEC（十进制）";
+    return key;
+}
+
+
+
 // 解析单个 token：数字（支持 0x/0b/0o 前缀）、标识符（函数名）、运算符。
 struct Tok {
     enum Kind { Num, Id, Op, LParen, RParen, End } kind;
@@ -221,13 +238,13 @@ QList<ResultBuilder::Item> CalcProvider::eval(const QString &exprRaw)
         if (conv) {
             QStringList outs;
             if (target.startsWith("hex") || target.contains("十六"))
-                outs << QString("HEX: 0x%1").arg(val, 0, 16);
+                outs << baseLabel("HEX") + QString(": 0x%1").arg(val, 0, 16);
             else if (target.startsWith("bin") || target.contains("二"))
-                outs << QString("BIN: 0b%1").arg(QString(val ? QString::number(val, 2) : "0"));
+                outs << baseLabel("BIN") + QString(": 0b%1").arg(QString(val ? QString::number(val, 2) : "0"));
             else if (target.startsWith("oct") || target.contains("八"))
-                outs << QString("OCT: 0o%1").arg(val, 0, 8);
+                outs << baseLabel("OCT") + QString(": 0o%1").arg(val, 0, 8);
             else
-                outs << QString("DEC: %1").arg(val);
+                outs << baseLabel("DEC") + QString(": %1").arg(val);
             for (const QString &o : outs) {
                 ResultBuilder::Item it;
                 it.key = QString("calc-base-%1").arg(o);
@@ -258,11 +275,11 @@ QList<ResultBuilder::Item> CalcProvider::eval(const QString &exprRaw)
         // 程序员友好：同时给出不同进制（仅整数结果）
         if (isInt) {
             ResultBuilder::Item h, b, o;
-            h.key = "calc-hex"; h.name = QString("HEX: 0x%1").arg(iv, 0, 16);
+            h.key = "calc-hex"; h.name = baseLabel("HEX") + QString(": 0x%1").arg(iv, 0, 16);
             h.icon = "accessories-calculator"; h.type = "convert/calc-hex";
-            b.key = "calc-bin"; b.name = QString("BIN: 0b%1").arg(QString::number(iv ? iv : 0, 2));
+            b.key = "calc-bin"; b.name = baseLabel("BIN") + QString(": 0b%1").arg(QString::number(iv ? iv : 0, 2));
             b.icon = "accessories-calculator"; b.type = "convert/calc-bin";
-            o.key = "calc-oct"; o.name = QString("OCT: 0o%1").arg(iv, 0, 8);
+            o.key = "calc-oct"; o.name = baseLabel("OCT") + QString(": 0o%1").arg(iv, 0, 8);
             o.icon = "accessories-calculator"; o.type = "convert/calc-oct";
             items.append(h); items.append(b); items.append(o);
         }
