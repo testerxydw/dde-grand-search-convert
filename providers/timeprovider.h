@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2026 xiyidaiwa
+// SPDX-FileCopyrightText: 2026 testerxydw
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #ifndef TIMEPROVIDER_H

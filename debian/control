@@ -1,7 +1,7 @@
 Source: convert-search-plugin
 Section: utils
 Priority: optional
-Maintainer: xiyidaiwa <g17729830615@163.com>
+Maintainer: testerxydw <g17729830615@163.com>
 Build-Depends: debhelper (>= 11),
                cmake,
                qt6-base-dev | qtbase5-dev,

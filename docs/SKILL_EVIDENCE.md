@@ -37,7 +37,7 @@ deepin-skills 的 `dtk-development` 框架 skill 获取 Qt/DBus 构建规范。
 
 ## 3. 工程与仓库实证
 
-- 仓库已推送：`https://github.com/xiyidaiwa/dde-grand-search-convert`
+- 仓库已推送：`https://github.com/testerxydw/dde-grand-search-convert`
   （`git push -u origin main` 成功，SSH 认证通过）
 - 双架构自动构建：`.github/workflows/build.yml`（amd64 原生 + arm64 QEMU 容器）
 - 本地编译验证：amd64 编译通过，dbus-send 联调各功能返回正确结果卡片。
