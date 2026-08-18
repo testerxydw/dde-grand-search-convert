@@ -3,4 +3,4 @@ convert-search-plugin (1.0.0) unstable; urgency=medium
   * 初始版本：单位换算、汇率换算、跨时区时间查询。
   * 基于 dde-grand-search V1.0 插件协议实现 Search/Stop/Action。
 
- -- Deepin Plugin Contest <contest@example.com>  Tue, 18 Aug 2026 14:00:00 +0800
+ -- xiyidaiwa <g17729830615@163.com>  Tue, 18 Aug 2026 14:00:00 +0800

@@ -2,10 +2,10 @@
 
 > DDE Grand Search · All-in-One Converter (currency / unit / time / calc / dev / date / color)
 
-[![Build amd64+arm64](https://github.com/testerxydw/dde-grand-search-convert/actions/workflows/build.yml/badge.svg)](https://github.com/testerxydw/dde-grand-search-convert/actions/workflows/build.yml)
+[![Build amd64+arm64](https://github.com/xiyidaiwa/dde-grand-search-convert/actions/workflows/build.yml/badge.svg)](https://github.com/xiyidaiwa/dde-grand-search-convert/actions/workflows/build.yml)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
 
-- 仓库 / Repository: https://github.com/testerxydw/dde-grand-search-convert
+- 仓库 / Repository: https://github.com/xiyidaiwa/dde-grand-search-convert
 - 基于 deepin-skills 的 dde-grand-search 插件开发指南 V1.0 完成。
 
 一个为 DDE 全局搜索（dde-grand-search）开发的扩展搜索插件。面向**各类人群**：办公党、

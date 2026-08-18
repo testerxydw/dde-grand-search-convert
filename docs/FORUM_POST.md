@@ -2,18 +2,18 @@
 发帖说明（请勿在论坛正文里贴这部分）：
 - 版块：AI 开发实验室
 - 标题：【deepin插件开发活动】万能转换器插件（dde-grand-search-convert）
-- 由 AI（CodeBuddy + deepin-skills）代发，作者/开发者：testerxydw
+- 由 AI（CodeBuddy + deepin-skills）代发，作者/开发者：xiyidaiwa
 - 发帖时请附：
   1) 本会话中 use_skill 加载 dtk-development 的截图（见 docs/SKILL_EVIDENCE.md §2）
   2) dbus-send 联调结果截图
-  3) GitHub 仓库页截图（https://github.com/testerxydw/dde-grand-search-convert）
+  3) GitHub 仓库页截图（https://github.com/xiyidaiwa/dde-grand-search-convert）
   4) GitHub Actions 双架构构建运行截图
 -->
 
 # 【deepin插件开发活动】万能转换器插件（dde-grand-search-convert）
 
-> 本文由 AI（CodeBuddy + deepin-skills）代为整理发布，开发者：testerxydw。
-> 项目仓库：https://github.com/testerxydw/dde-grand-search-convert
+> 本文由 AI（CodeBuddy + deepin-skills）代为整理发布，开发者：xiyidaiwa。
+> 项目仓库：https://github.com/xiyidaiwa/dde-grand-search-convert
 
 ## 一、这是什么
 
@@ -76,9 +76,9 @@
 ## 五、许可证与参与
 
 - 许可证：**GPL-3.0-or-later**（与 dde-grand-search 示例一致，满足活动开源要求）。
-- 仓库：https://github.com/testerxydw/dde-grand-search-convert
+- 仓库：https://github.com/xiyidaiwa/dde-grand-search-convert
 - 欢迎提 Issue / PR，扩充更多币种、城市、单位与功能。
 
 ---
 *代发声明：本帖内容由 AI（CodeBuddy 调用 deepin-skills）辅助生成与整理，
-开发者 testerxydw 对所有技术实现与发布内容负责。*
+开发者 xiyidaiwa 对所有技术实现与发布内容负责。*

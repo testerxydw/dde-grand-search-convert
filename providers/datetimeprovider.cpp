@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2026 Deepin Plugin Contest
+// SPDX-FileCopyrightText: 2026 xiyidaiwa
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "datetimeprovider.h"
