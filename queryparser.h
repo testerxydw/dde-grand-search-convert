@@ -17,7 +17,8 @@ enum class Type {
     Program,   // 程序员工具（ASCII/Base64/URL/哈希/时间戳）
     DateTime,  // 日期差、倒数日、时间戳
     Color,     // 颜色转换（RGB/HEX/HSL）
-    Energy     // 热量转换（千卡/千焦/卡/焦耳）
+    Energy,    // 热量转换（千卡/千焦/卡/焦耳）
+    Help       // 使用说明（输入 help/?/使用说明/帮助 查看功能示例）
 };
 
 struct Parsed {

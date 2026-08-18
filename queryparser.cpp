@@ -156,6 +156,13 @@ Parsed parse(const QString &input)
 
     QString s = p.raw.toLower();
 
+    // 0) 使用说明：help / ? / ？ / 使用说明 / 帮助 / 用法 / 怎么用
+    if (s == "help" || s == "?" || s == "？" || s == "使用说明" || s == "帮助"
+        || s == "用法" || s == "怎么用" || s == "功能" || s == "menu") {
+        p.type = Type::Help;
+        return p;
+    }
+
     // 1) 货币：符号或代码出现在数字附近
     // 形如 100usd / $50 / 100 usd to cny / 100美元 / 100usd=?cny
     QRegularExpression curRe(R"(([0-9]+(?:\.[0-9]+)?)\s*(usd|eur|cny|gbp|jpy|hkd|krw|美元|美金|欧元|人民币|元|英镑|日元|港币|韩元|\$|€|¥|￥|£))");
@@ -192,9 +199,9 @@ Parsed parse(const QString &input)
         p.from = tempM.captured(2) == "f" ? "f" : (tempM.captured(2) == "k" ? "k" : "c");
         // 目标温度标度：to / =? 之后
         QRegularExpression tToRe(R"((?:to|=|\?)\s*(c|f|k))");
-        QRegularExpressionMatch tToM = tToRe.match(s);
-        if (tToM.hasMatch())
-            p.to = tToM.captured(1);
+        QRegularExpressionMatchIterator tIt = tToRe.globalMatch(s);
+        if (tIt.hasNext())
+            p.to = tIt.next().captured(1);
         return p;
     }
 
@@ -207,25 +214,35 @@ Parsed parse(const QString &input)
         p.from = enM.captured(2);
         // 目标热量单位：to / =? / ? 之后
         QRegularExpression eToRe(R"((?:to|=|\?)\s*(kcal|千卡|大卡|kj|千焦|cal|卡|焦|焦耳))");
-        QRegularExpressionMatch eToM = eToRe.match(s);
-        if (eToM.hasMatch())
-            p.to = eToM.captured(1);
+        QRegularExpressionMatchIterator eIt = eToRe.globalMatch(s);
+        if (eIt.hasNext())
+            p.to = eIt.next().captured(1);
         return p;
     }
 
-    // 3) 单位换算：数字 + 单位词
+    // 3) 单位换算：数字 + 单位词（可选 目标单位，支持 to/=/?/空格）
     QRegularExpression numUnitRe(R"(([0-9]+(?:\.[0-9]+)?)\s*([a-z\x{4e00}-\x{9fff}]+))");
     QRegularExpressionMatch nuM = numUnitRe.match(s);
-    if (nuM.hasMatch() && containsUnitWord(nuM.captured(2))) {
-        p.type = Type::Unit;
-        p.value = nuM.captured(1).toDouble();
+    if (nuM.hasMatch()) {
         p.from = nuM.captured(2);
-        // 目标单位：to / =? / ? 之后
-        QRegularExpression uToRe(R"((?:to|=|\?)\s*([a-z\x{4e00}-\x{9fff}]+))");
-        QRegularExpressionMatch uToM = uToRe.match(s);
-        if (uToM.hasMatch())
-            p.to = uToM.captured(1);
-        return p;
+        if (containsUnitWord(p.from)) {
+            p.type = Type::Unit;
+            p.value = nuM.captured(1).toDouble();
+            // 目标单位：from 之后的部分，支持 to/=/?/空格 分隔
+            QString rest = s.mid(nuM.captured(0).length()).trimmed();
+            QRegularExpression toRe(R"(^(?:to|=|\?)\s*([a-z\x{4e00}-\x{9fff}]+))");
+            QRegularExpressionMatch toM = toRe.match(rest);
+            if (toM.hasMatch()) {
+                p.to = toM.captured(1);
+            } else {
+                // 纯空格分隔：1kg 斤 → 取 rest 首个单位词
+                QRegularExpression spRe(R"(([a-z\x{4e00}-\x{9fff}]+))");
+                QRegularExpressionMatch spM = spRe.match(rest);
+                if (spM.hasMatch() && containsUnitWord(spM.captured(1)))
+                    p.to = spM.captured(1);
+            }
+            return p;
+        }
     }
 
     // 4) 时间：含城市/时区关键词

@@ -22,6 +22,43 @@
 
 Q_LOGGING_CATEGORY(logConvert, "convert.search.plugin")
 
+// 使用说明卡片：列出全部功能与示例，跟随系统语言展示。
+static QList<ResultBuilder::Item> buildHelp()
+{
+    const bool zh = I18n::isChinese();
+    auto mk = [](const QString &key, const QString &name) {
+        ResultBuilder::Item it;
+        it.key = key;
+        it.name = name;
+        it.icon = "dialog-information";
+        it.type = "convert/help-item";
+        return it;
+    };
+    QList<ResultBuilder::Item> items;
+    if (zh) {
+        items << mk("help-currency", "汇率：100usd / 100 USD to CNY / 100美元");
+        items << mk("help-unit",     "单位：12inch / 1kg=?斤 / 3km / 100F");
+        items << mk("help-time",     "时区：北京时间 / tokyo now / 纽约时间");
+        items << mk("help-calc",     "计算器：12*8+sqrt(16) / 255 to hex（整数附 HEX/BIN/OCT）");
+        items << mk("help-prog",     "程序员工具：base64 encode hello / md5 hello / 时间戳 / ascii A");
+        items << mk("help-date",     "日期：距 2027-01-01 还有几天 / 2025-01-01 到 2025-12-31 / 今天");
+        items << mk("help-color",    "颜色：#ff8800 / rgb(255,136,0) / hsl(32,100%,50%)");
+        items << mk("help-energy",   "热量：100 kcal（→ 千焦/卡 + 食物份数，控卡必备）");
+        items << mk("help-tip",      "提示：结果点击即复制到剪贴板；输入 help 随时查看本说明");
+    } else {
+        items << mk("help-currency", "Currency: 100usd / 100 USD to CNY / 100美元");
+        items << mk("help-unit",     "Unit: 12inch / 1kg=?斤 / 3km / 100F");
+        items << mk("help-time",     "Timezone: 北京时间 / tokyo now / 纽约时间");
+        items << mk("help-calc",     "Calculator: 12*8+sqrt(16) / 255 to hex (HEX/BIN/OCT)");
+        items << mk("help-prog",     "Developer: base64 encode hello / md5 hello / 时间戳 / ascii A");
+        items << mk("help-date",     "Date: 距 2027-01-01 还有几天 / 2025-01-01 到 2025-12-31 / 今天");
+        items << mk("help-color",    "Color: #ff8800 / rgb(255,136,0) / hsl(32,100%,50%)");
+        items << mk("help-energy",   "Energy: 100 kcal (→ kJ/cal + food portions)");
+        items << mk("help-tip",      "Tip: click a result to copy; type 'help' anytime");
+    }
+    return items;
+}
+
 ConvertSearch::ConvertSearch(QObject *parent)
     : QObject(parent), m_currency(new CurrencyProvider(this))
 {
@@ -68,6 +105,7 @@ QString ConvertSearch::search(const QString &json)
     const QString grpDate = I18n::groupName("date");
     const QString grpColor = I18n::groupName("color");
     const QString grpEnergy = I18n::groupName("energy");
+    const QString grpHelp = I18n::isChinese() ? "使用说明" : "Help";
 
     switch (p.type) {
     case QueryParser::Type::Currency: {
@@ -110,8 +148,22 @@ QString ConvertSearch::search(const QString &json)
         ResultBuilder::addGroup(root, grpEnergy, items);
         break;
     }
-    default:
-        break; // None：返回空，不影响其他搜索项
+    case QueryParser::Type::Help: {
+        ResultBuilder::addGroup(root, grpHelp, buildHelp());
+        break;
+    }
+    default: {
+        // None：未识别时给出友好提示（而非静默空结果），引导用户查看说明
+        ResultBuilder::Item it;
+        it.key = "hint-unknown";
+        it.name = I18n::isChinese()
+            ? "未识别此查询，输入 help 查看全部功能与示例"
+            : "Unrecognized query. Type 'help' to see all features & examples";
+        it.icon = "dialog-information";
+        it.type = "convert/help-hint";
+        ResultBuilder::addGroup(root, grpHelp, {it});
+        break;
+    }
     }
 
     QJsonDocument doc(root);
