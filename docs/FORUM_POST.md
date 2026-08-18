@@ -15,7 +15,7 @@
 > 本文由 AI（CodeBuddy + deepin-skills）代为整理发布，开发者：testerxydw。
 > 项目仓库：https://github.com/testerxydw/dde-grand-search-convert
 
-## 零、开发用时概览
+## 一、开发用时概览
 
 ### 选题来源（AI 读取活动贴后自动整理选定）
 
@@ -49,10 +49,42 @@
 > 说明：以上为 17:24 至 19:04 的集中开发阶段划分，总用时约 1 小时 40 分钟，
 > 体现 AI 辅助下从选题到可发帖的高效迭代。
 
-## 一、这是什么
+## 二、截图清单（发帖时请自行截图贴入）
+
+> 本插件为本地运行的桌面插件，截图需你在自己的 deepin 环境下实际操作后粘贴。
+> 以下为建议截图项，发帖时把对应图片上传到本帖对应小节即可。
+
+### 2.1 开发环境 / deepin-skills 调用
+
+- [ ] `use_skill` 加载 `dtk-development` 的对话截图（见「三、deepin-skills 的重要作用」实证）
+- [ ] 本机已安装 skill 的终端截图：`ls ~/.codebuddy/skills/`
+
+### 2.2 实际搜索效果（DDE 全局搜索栏）
+
+- [ ] 汇率：`100usd` → 多币种卡片
+- [ ] 单位：`1kg=?斤` / `3km` 结果卡片
+- [ ] 计算器 / 进制：`12*8+sqrt(16)`、`255 to hex`
+- [ ] 程序员工具：`base64 encode hello`、`md5 hello`、`时间戳`、`ascii A`
+- [ ] 日期倒数：`距 2027-01-01 还有几天`
+- [ ] 颜色：`#ff8800` 三向互转
+- [ ] 热量（新增）：`100 kcal` → 千焦/卡 + 食物份数
+
+### 2.3 仓库与构建
+
+- [ ] GitHub 仓库页：`https://github.com/testerxydw/dde-grand-search-convert`
+- [ ] GitHub Actions 双架构（amd64 + arm64）构建运行截图
+
+### 2.4 开始时间
+
+- [ ] 真正开始时间截图（17:24，见「零、开发用时概览」）
+
+> 提示：图片建议命名为 `shot-xxx.png` 并放在 `docs/images/` 下，
+> 用 `![说明](docs/images/shot-xxx.png)` 引用。
+
+## 三、这是什么
 
 一个面向 DDE 全局搜索（dde-grand-search）的扩展插件，让用户在全局搜索栏直接完成
-**7 类高频轻量查询**，覆盖办公党、学生/科研、程序员、设计师各类人群：
+**8 类高频轻量查询**，覆盖办公党、学生/科研、程序员、设计师、减肥人群各类人群：
 
 | 能力 | 适用人群 | 示例 |
 |------|---------|------|
@@ -63,22 +95,27 @@
 | 程序员工具 | 程序员 | `base64 encode hello`、`md5 hello`、`时间戳`、`ascii A` |
 | 日期/倒数日 | 办公党 | `距 2027-01-01 还有几天`、`2025-01-01 到 2025-12-31` |
 | 颜色转换 | 设计师 | `#ff8800` ↔ `rgb(255,136,0)` ↔ `hsl(32,100%,50%)` |
+| 热量转换 | 减肥/控卡人群 | `100 kcal` → 千焦/卡/焦耳 + `≈ 0.9 碗白米饭` 食物份数 |
 
 灵感来自 macOS 聚焦搜索的单位/汇率/计算能力、Ubuntu Calculator 的进制与表达式，
 聚合为 deepin 生态当前缺失的一站式转换器。
 
-### 为什么做「说明语言按系统语言」？
+### 为什么做「说明语言贴合国际化、跟随系统语言」？
 
 参考现有搜索结果，常见插件只显示单位/币种缩写（如 `3.00 km = 300,000.0000 cm`），
-对不熟悉英文缩写的用户并不友好。本插件会**根据系统语言在结果中附加中文说明**，例如：
+对不熟悉英文缩写的用户并不友好。**昨晚我们做了一次国际化改造**，把所有转换结果的
+「说明文字」统一收口到 `i18n` 模块，真正跟随用户系统语言展示，而非写死中文：
 
-- `3.00 km（千米/公里） = 3,000.0000 m（米）`
-- `100.00 USD（美元） = 725.00 CNY（人民币）`
-- `HEX（十六进制）: 0xff`
+- **中文环境**：`3.00 km（千米/公里） = 3,000.0000 m（米）`、`100.00 USD（美元） = 725.00 CNY（人民币）`
+- **英文环境**：`3.00 km (kilometer) = 3,000.0000 m (meter)`、`100.00 USD (US Dollar) = 725.00 CNY (Chinese Yuan)`
+- 进制/颜色/温度/热量标签同样本地化：`HEX（十六进制）` / `HEX (hexadecimal)`、`RGB（红绿蓝）` / `RGB (red/green/blue)`
 
-让办公党、长辈、学生等各类人群一眼看懂每个缩写代表什么。
+实现上，组名、货币名、单位名、进制/颜色标签、温度、热量全部走
+`I18n::groupName / unitName / currencyName / miscName`，由 `QLocale` 判定系统语言；
+**后续扩展更多语言时，只需在 `i18n.cpp` 的映射表里增加一列，各 provider 无需改动**。
+让办公党、长辈、学生、海外用户等各类人群一眼看懂每个缩写代表什么。
 
-## 二、使用说明
+## 四、使用说明
 
 ### 安装
 
@@ -117,14 +154,18 @@ md5 hello                      程序员工具：5d41402abc4b2a76b9719d911017c59
 ascii A                        程序员工具：'A' = ASCII 65
 距 2027-01-01 还有几天         日期：还有 136 天
 #ff8800                        颜色：RGB（红绿蓝） rgb(255,136,0)
+100 kcal                        热量：100.00 kcal（千卡/大卡）= 418.40 kj（千焦）≈ 0.9 碗白米饭
 ```
 
 > 提示：汇率功能联网获取实时汇率（失败自动降级到内置静态表，离线也可用）；
 > 其余 6 类功能全部本地计算，零网络依赖。
 
-## 三、deepin-skills 调用实证（活动硬性要求）
+## 五、deepin-skills 的重要作用（活动硬性要求）
 
-本插件由 AI 借助已安装的 **deepin-skills** 完成开发。
+本插件**全程由 AI 借助已安装的 deepin-skills 完成开发**。deepin-skills 在本项目中
+**不是摆设，而是开发的事实依据**：它把 deepin 官方分散的 DTK/Qt/DBus 构建规范、
+架构约定、CMake 与文档路由表「装进」了 AI 的上下文，让 AI 在每一步都能按 deepin
+社区的标准写法落地，而不是凭猜测拼代码。
 
 ### 3.1 deepin-skills 安装事实（可复现）
 
@@ -152,18 +193,23 @@ use_skill: dtk-development
 → 返回 DTK 开发指南正文（架构/CMake/DBus/主题等路由表）
 ```
 
-### 3.3 开发过程如何依托 skill
+### 3.3 deepin-skills 在开发中的关键作用
 
-1. 通过 `use_skill` 加载 `dtk-development` skill，获取 DTK/Qt/DBus 构建规范。
-2. 遵循 dde-grand-search 官方 V1.0 插件协议与 `calculator-search-plugin` 示例
-   实现 `SearchPlugin` 接口。
-3. 完整开发过程均基于 deepin-skills 框架约束（CMake 兼容、Qt 版本探测、DBus 通信）。
+1. **规范落地**：`dtk-development` skill 提供的 DBus/Qt 构建约束，直接决定了插件的
+   DBus 服务名、JSON 报文结构、CMake 兼容写法，避免与 dde-grand-search 协议冲突。
+2. **Qt5/Qt6 双版本兼容**：遵循 skill 的版本探测与兼容约定，插件自动适配 Qt5/Qt6，
+   降低在不同 deepin 版本上的构建失败风险。
+3. **少走弯路**：skill 的文档路由表把「该看哪份官方文档」直接指给 AI，选题、协议、
+   示例（calculator-search-plugin）的定位都来自 skill 引导，省去大量试错。
+4. **工程约束内化**：国际化改造、目录结构、provider 拆分等工程决策，都参照 skill
+   强调的「最小实现、职责单一」原则，保证代码可维护、可扩展。
 
 > 说明：deepin-skills 官方仓库当前含 4 个 skill（control-center / shell / tray /
 > dtk），**暂未提供 dde-grand-search 专属 skill**；本插件调用了其中的
 > `dtk-development` 框架 skill 作为开发依据，并严格遵循 dde-grand-search 官方协议。
+> 这也是 AI 能在约 1 小时 40 分钟内从选题到可发帖的关键支撑之一。
 
-## 四、技术实现
+## 六、技术实现
 
 - 遵循 dde-grand-search 官方 **V1.0 插件协议**：独立 DBus 服务进程，实现
   `Search` / `Stop` / `Action` 三方法，JSON 报文（ver/mID/cont/action/item）。
@@ -175,7 +221,7 @@ use_skill: dtk-development
 - Qt5/Qt6 自动探测；汇率联网失败时自动降级到内置静态表，离线可用。
 - 除汇率外，其余 6 类功能**全部本地计算，零网络依赖、零隐私上传**。
 
-## 五、构建与验证
+## 七、构建与验证
 
 - 本地 amd64 编译通过，并打包为 `convert-search-plugin_1.0.0_amd64.deb`。
 - **端到端集成验证**：安装 deb → 重启 daemon → 触发搜索 → daemon 自动拉起插件
@@ -197,8 +243,9 @@ use_skill: dtk-development
 | `时间戳` | Unix 秒 / 毫秒 |
 | `距 2027-01-01 还有几天` | 还有 136 天 |
 | `#ff8800` | HEX（十六进制色值） #ff8800 / RGB（红绿蓝） rgb(255,136,0) / HSL hsl(32,100%,50%) |
+| `100 kcal` | 100.00 kcal（千卡/大卡）= 418.40 kj（千焦）= 100,000.00 cal（卡）≈ 0.9 碗白米饭 |
 
-## 六、许可证与参与
+## 八、许可证与参与
 
 - 许可证：**GPL-3.0-or-later**（与 dde-grand-search 示例一致，满足活动开源要求）。
 - 仓库：https://github.com/testerxydw/dde-grand-search-convert

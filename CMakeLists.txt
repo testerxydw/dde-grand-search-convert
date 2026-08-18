@@ -52,6 +52,10 @@ set(PLUGIN_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/providers/datetimeprovider.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/providers/colorprovider.h
     ${CMAKE_CURRENT_SOURCE_DIR}/providers/colorprovider.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/providers/energyprovider.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/providers/energyprovider.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/i18n.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/i18n.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/searchpluginadaptor.h
     ${CMAKE_CURRENT_SOURCE_DIR}/searchpluginadaptor.cpp
 )

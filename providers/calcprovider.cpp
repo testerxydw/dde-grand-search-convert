@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "calcprovider.h"
+#include "i18n.h"
 
 #include <QRegularExpression>
 #include <QLocale>
@@ -9,19 +10,9 @@
 
 namespace {
 
-static bool isChineseLocale()
-{
-    return QLocale().language() == QLocale::Chinese;
-}
-
 static QString baseLabel(const QString &key)
 {
-    if (!isChineseLocale()) return key;
-    if (key == "HEX") return "HEX（十六进制）";
-    if (key == "BIN") return "BIN（二进制）";
-    if (key == "OCT") return "OCT（八进制）";
-    if (key == "DEC") return "DEC（十进制）";
-    return key;
+    return I18n::miscName(key);
 }
 
 

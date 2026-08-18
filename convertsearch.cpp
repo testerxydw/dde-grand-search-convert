@@ -10,6 +10,8 @@
 #include "providers/programprovider.h"
 #include "providers/datetimeprovider.h"
 #include "providers/colorprovider.h"
+#include "providers/energyprovider.h"
+#include "i18n.h"
 
 #include <QJsonDocument>
 #include <QJsonParseError>
@@ -57,15 +59,15 @@ QString ConvertSearch::search(const QString &json)
     root["ver"] = "1.0";
     root["mID"] = mID;
 
-    // 组名按系统语言返回（规范强制要求国际化）
-    const bool zh = (QLocale().language() == QLocale::Chinese);
-    const QString grpCur = zh ? QString::fromUtf8("汇率") : "Currency";
-    const QString grpUnit = zh ? QString::fromUtf8("单位") : "Unit";
-    const QString grpTime = zh ? QString::fromUtf8("时间") : "Time";
-    const QString grpCalc = zh ? QString::fromUtf8("计算器") : "Calculator";
-    const QString grpProg = zh ? QString::fromUtf8("程序员工具") : "Developer";
-    const QString grpDate = zh ? QString::fromUtf8("日期") : "Date";
-    const QString grpColor = zh ? QString::fromUtf8("颜色") : "Color";
+    // 组名按系统语言返回（统一走 I18n，便于扩展更多语言）
+    const QString grpCur = I18n::groupName("currency");
+    const QString grpUnit = I18n::groupName("unit");
+    const QString grpTime = I18n::groupName("time");
+    const QString grpCalc = I18n::groupName("calculator");
+    const QString grpProg = I18n::groupName("developer");
+    const QString grpDate = I18n::groupName("date");
+    const QString grpColor = I18n::groupName("color");
+    const QString grpEnergy = I18n::groupName("energy");
 
     switch (p.type) {
     case QueryParser::Type::Currency: {
@@ -101,6 +103,11 @@ QString ConvertSearch::search(const QString &json)
     case QueryParser::Type::Color: {
         auto items = ColorProvider::convert(p.text);
         ResultBuilder::addGroup(root, grpColor, items);
+        break;
+    }
+    case QueryParser::Type::Energy: {
+        auto items = EnergyProvider::convert(p.value, p.from, p.to);
+        ResultBuilder::addGroup(root, grpEnergy, items);
         break;
     }
     default:

@@ -16,7 +16,8 @@ enum class Type {
     Calc,      // 科学/程序员计算器（表达式、进制转换）
     Program,   // 程序员工具（ASCII/Base64/URL/哈希/时间戳）
     DateTime,  // 日期差、倒数日、时间戳
-    Color      // 颜色转换（RGB/HEX/HSL）
+    Color,     // 颜色转换（RGB/HEX/HSL）
+    Energy     // 热量转换（千卡/千焦/卡/焦耳）
 };
 
 struct Parsed {

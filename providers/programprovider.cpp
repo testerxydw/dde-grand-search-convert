@@ -2,20 +2,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "programprovider.h"
+#include "i18n.h"
 
 #include <QRegularExpression>
 #include <QByteArray>
 #include <QCryptographicHash>
 #include <cctype>
 #include <QDateTime>
-#include <QLocale>
 
 namespace {
-
-static bool isChineseLocale()
-{
-    return QLocale().language() == QLocale::Chinese;
-}
 
 // 提取「动作 + 内容」：如 base64 decode xxx / md5 xxx / url encode xxx
 struct Req {
@@ -166,10 +161,12 @@ QList<ResultBuilder::Item> ProgramProvider::run(const QString &text)
                 result = QString::fromUtf8(out);
             }
         }
+        QString verb = I18n::isChinese()
+            ? (r.action == "encode" ? "编码" : "解码")
+            : (r.action == "encode" ? "encode" : "decode");
         ResultBuilder::Item it;
         it.key = QString("prog-%1-%2").arg(r.algo).arg(r.action);
-        it.name = QString("%1 %2: %3").arg(r.algo.toUpper())
-            .arg(r.action == "encode" ? "编码" : "解码").arg(result);
+        it.name = QString("%1 %2: %3").arg(r.algo.toUpper()).arg(verb).arg(result);
         it.icon = "utilities-terminal";
         it.type = QString("convert/prog-%1").arg(r.algo);
         items.append(it);

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "currencyprovider.h"
+#include "i18n.h"
 
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
@@ -9,7 +10,6 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
-#include <QLocale>
 #include <QUrl>
 #include <QUrlQuery>
 
@@ -17,25 +17,9 @@ const QStringList CurrencyProvider::kDefaultTargets = {
     "CNY", "USD", "EUR", "JPY", "GBP", "HKD",
 };
 
-// 货币代码 → 中文名称（按系统语言返回）
-static const QHash<QString, QString> kCurrencyDisplay = {
-    {"CNY", "人民币"}, {"USD", "美元"}, {"EUR", "欧元"},
-    {"JPY", "日元"}, {"GBP", "英镑"}, {"HKD", "港币"},
-    {"KRW", "韩元"},
-};
-
-static bool isChineseLocale()
-{
-    return QLocale().language() == QLocale::Chinese;
-}
-
 static QString currencyDisplay(const QString &code)
 {
-    QString upper = code.toUpper();
-    QString cn = kCurrencyDisplay.value(upper);
-    if (cn.isEmpty())
-        return upper;
-    return isChineseLocale() ? QString("%1（%2）").arg(upper).arg(cn) : upper;
+    return I18n::currencyName(code);
 }
 
 // 内置静态汇率（相对 CNY），作为离线降级。数值为示意，联网后会被覆盖。

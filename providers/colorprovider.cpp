@@ -2,24 +2,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "colorprovider.h"
+#include "i18n.h"
 
 #include <QRegularExpression>
-#include <QLocale>
 
 namespace {
 
-static bool isChineseLocale()
-{
-    return QLocale().language() == QLocale::Chinese;
-}
-
 static QString colorLabel(const QString &key)
 {
-    if (!isChineseLocale()) return key;
-    if (key == "HEX") return "HEX（十六进制色值）";
-    if (key == "RGB") return "RGB（红绿蓝）";
-    if (key == "HSL") return "HSL（色相/饱和度/亮度）";
-    return key;
+    return I18n::miscName(key);
 }
 
 

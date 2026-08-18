@@ -183,8 +183,8 @@ Parsed parse(const QString &input)
         return p;
     }
 
-    // 2) 温度：数字 + C/F/K（k 需排除 kg/km/kb 等单位词，避免误判）
-    QRegularExpression tempRe(R"(([0-9]+(?:\.[0-9]+)?)\s*(c|f|k|摄氏度|华氏度))");
+    // 2) 温度：数字 + C/F/K（k 需排除热量词 kcal/kj 与 kg/km 等单位词，避免误判）
+    QRegularExpression tempRe(R"(([0-9]+(?:\.[0-9]+)?)\s*(c|f|k(?!cal|j)|摄氏度|华氏度))");
     QRegularExpressionMatch tempM = tempRe.match(s);
     if (tempM.hasMatch() && !containsUnitWord(s)) {
         p.type = Type::Unit;
@@ -195,6 +195,21 @@ Parsed parse(const QString &input)
         QRegularExpressionMatch tToM = tToRe.match(s);
         if (tToM.hasMatch())
             p.to = tToM.captured(1);
+        return p;
+    }
+
+    // 3.5) 热量转换：数字 + 热量单位词（必须在普通单位之前，避免被 k/cal 等拆分）
+    QRegularExpression energyRe(R"(([0-9]+(?:\.[0-9]+)?)\s*(kcal|千卡|大卡|kj|千焦|cal|卡|焦|焦耳))");
+    QRegularExpressionMatch enM = energyRe.match(s);
+    if (enM.hasMatch()) {
+        p.type = Type::Energy;
+        p.value = enM.captured(1).toDouble();
+        p.from = enM.captured(2);
+        // 目标热量单位：to / =? / ? 之后
+        QRegularExpression eToRe(R"((?:to|=|\?)\s*(kcal|千卡|大卡|kj|千焦|cal|卡|焦|焦耳))");
+        QRegularExpressionMatch eToM = eToRe.match(s);
+        if (eToM.hasMatch())
+            p.to = eToM.captured(1);
         return p;
     }
 
