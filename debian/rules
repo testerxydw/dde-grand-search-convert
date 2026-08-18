@@ -1,0 +1,13 @@
+#!/usr/bin/make -f
+# Debian rules for convert-search-plugin
+
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+
+%:
+	dh $@
+
+override_dh_auto_configure:
+	dh_auto_configure -- -DCMAKE_INSTALL_PREFIX=/usr
+
+override_dh_auto_install:
+	dh_auto_install --destdir=debian/convert-search-plugin

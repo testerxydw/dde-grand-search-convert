@@ -1,0 +1,9 @@
+[Grand Search]
+Name=org.deepin.grandsearch.convert
+Mode=Auto
+Priority=1
+DBusService=org.deepin.grandsearch.convert
+DBusAddress=/org/deepin/grandsearch/convert
+DBusInterface=org.deepin.grandsearch.convert.SearchPlugin
+InterfaceVersion=1.0
+Exec=@CONVERT_PLUGIN_EXEC@
