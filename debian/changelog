@@ -1,3 +1,8 @@
+convert-search-plugin (1.1.1) unstable; urgency=medium
+
+  * 工程：自动打包版本自增（1.1.0 -> 1.1.1）。
+
+ -- testerxydw <g17729830615@163.com>  Wed, 19 Aug 2026 13:42:12 +0800
 convert-search-plugin (1.1.0) unstable; urgency=medium
 
   * 新增：搜索框使用说明（输入 help/?/使用说明 查看全部功能示例）。

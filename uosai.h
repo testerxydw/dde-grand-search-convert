@@ -14,10 +14,11 @@ namespace UosAi {
 bool isAvailable();
 
 // 将文本发送到 UOS AI 对话：
-// 1) 注册本应用并登记命令提示（首调用时）
-// 2) 拉起 AI 对话页（launchChatPage）
-// 3) 将文本写入系统剪贴板，便于用户在对话中直接粘贴发送
-// 返回是否成功发起（仅代表调用未被异常中断，不代表 AI 已收到）
+// 1) 注册本应用并登记命令提示（首调用时，主接口 /com/deepin/copilot）
+// 2) 调用 org.deepin.copilot.chat.inputPrompt(text, {}) 把文本送入对话输入框
+//    （接口路径 /org/deepin/copilot/chat，签名为 s a{ss}，已本机验证）
+// 3) inputPrompt 失败时回退：launchChatPage + 写剪贴板让用户手动粘贴
+// 返回是否成功发起（true 代表 inputPrompt 已发送或剪贴板已写入）
 bool sendToCopilot(const QString &text);
 
 } // namespace UosAi
