@@ -33,6 +33,7 @@ private:
 
     CurrencyProvider *m_currency;        // 常驻，负责汇率缓存与联网
     QHash<QString, QJsonObject> m_lastResults;
+    QHash<QString, QString> m_lastCont;   // mID → 原始查询文本（UOS AI 联动用）
     QMutex m_mutex;
 };
 

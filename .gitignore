@@ -1,6 +1,8 @@
 build/
 *.o
 *.user
+build.dist/
+dist/
 
 # Debian 打包构建产物（dpkg-buildpackage 生成，非源码）
 obj-*/

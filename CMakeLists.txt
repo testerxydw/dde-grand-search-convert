@@ -56,6 +56,8 @@ set(PLUGIN_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/providers/energyprovider.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/i18n.h
     ${CMAKE_CURRENT_SOURCE_DIR}/i18n.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/uosai.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/uosai.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/searchpluginadaptor.h
     ${CMAKE_CURRENT_SOURCE_DIR}/searchpluginadaptor.cpp
 )

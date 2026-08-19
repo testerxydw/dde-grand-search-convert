@@ -219,10 +219,75 @@ dbus-send --session --print-reply --dest=org.deepin.grandsearch.convert \
 - **Q：结果看不懂缩写？** 结果已按系统语言附加中文/英文说明；如需其他语言可在
   `i18n.cpp` 的映射表扩展。
 - **Q：支持自定义单位/城市吗？** 目前为内置表，欢迎提 Issue/PR 扩充。
+- **Q：UOS AI 联动不显示？** 需系统已安装并启用 UOS AI（`com.deepin.copilot`）。
+  未启用时插件照常工作，仅不显示「用 UOS AI 处理」入口。
 
 ---
 
-## 八、后续规划 / Roadmap
+## 八、UOS AI 联动 / UOS AI Integration
+
+插件可把搜索内容一键发送到 **UOS AI**（`com.deepin.copilot`）对话，实现「输入框即入口、
+AI 即处理」的无缝联动。
+
+- 当系统已启用 UOS AI，且有实质查询结果时，结果区会多出一条
+  **「用 UOS AI 处理：<你的输入>」** 卡片（即「检测到输入后可调用 UOS AI 自动处理」的体现）。
+- 点击该卡片，插件通过 DBus 调起 UOS AI 对话页（`launchChatPage`），并把原始查询写入系统
+  剪贴板，便于你在对话中直接粘贴发起对话；同时首次调用会向 UOS AI 注册本应用与命令提示
+  （`registerApp` / `registerAppCmdPrompts`）。
+- 实现位于 `uosai.cpp`，所有调用**容错**：UOS AI 不可用时不显示入口、不影响主功能。
+- 说明：全局搜索**输入框下方的提示条**属 dde-grand-search 前端 QML（不在本插件仓库范围）；
+  本插件提供后端联动能力（结果卡片 + DBus 调起），前端提示条可由 dde-grand-search 基于
+  本插件的 `convert/uosai` 结果项实现。
+
+---
+
+## 九、一键打包 / Package Script
+
+提供 `scripts/package.sh`，自动完成**依赖检查 → 编译 → 打包 → 生成发布产物**，支持多架构。
+
+```bash
+./scripts/package.sh              # 本机架构 (amd64)
+./scripts/package.sh amd64 arm64  # 指定架构（arm64 需 docker + QEMU）
+```
+
+产物目录 `build/dist/<arch>/`：
+
+```
+convert-search-plugin_<ver>_<arch>.deb    # deb 安装包
+convert-search-plugin_<arch>              # 裸二进制
+SHA256SUMS_<arch>.txt                     # 单架构校验和
+SHA256SUMS.txt                             # 汇总校验和
+```
+
+---
+
+## 十、测试制度 / Testing
+
+每次修改后运行单元测试，快速验证解析与各 provider 行为：
+
+```bash
+./tests/run_tests.sh
+```
+
+测试源码 `tests/test_main.cpp` 覆盖：`help`/单位目标单位/热量解析、单位/计算/颜色/程序/
+日期/热量各 provider 结果、i18n 输出。全部通过显示 `通过 N / 失败 0`。
+
+---
+
+## 十一、自动构建与发布 / CI & Release
+
+- **构建**：`.github/workflows/build.yml` 在 push/PR 时对 **amd64（原生）+ arm64（QEMU
+  容器）** 双架构编译，仅依赖 Qt6（含 GUI 开发包），失败时打印完整日志。
+- **发布**：`.github/workflows/release.yml` 在以下情况自动触发：
+  1. 推送 **tag**（`v*`）；
+  2. 提交信息含 **`release` / `publish`** 关键词。
+  触发后自动构建双架构 **deb + 裸二进制 + SHA256 校验和**，生成 CHANGELOG（基于 git 提交），
+  并创建 GitHub Release 上传全部 Assets（主流发包做法：多架构二进制包 + 校验文件）。
+- 发布前建议执行 `./tests/run_tests.sh` 确保测试通过。
+
+---
+
+## 十二、后续规划 / Roadmap
 
 见 [docs/DESIGN.md](docs/DESIGN.md) §7，方向包括：农历节气、全球时区穿透、健康运动
 （BMI/步数）、购物比价、限行提醒、密码生成、编码扩展、单位增强（油耗/尺码/纸张）、
@@ -230,6 +295,6 @@ dbus-send --session --print-reply --dest=org.deepin.grandsearch.convert \
 
 ---
 
-## 九、许可证 / License
+## 十三、许可证 / License
 
 GPL-3.0-or-later（与 dde-grand-search 示例一致，满足活动开源要求）。

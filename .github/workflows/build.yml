@@ -22,40 +22,51 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # 多架构：用 QEMU + 容器构建 arm64（GitHub 托管 runner 为 x86_64）
       - name: Set up QEMU
         if: matrix.arch == 'arm64'
         uses: docker/setup-qemu-action@v3
 
-      - name: Build on amd64 (native)
+      - name: Build on amd64 (native, Qt6 only)
         if: matrix.arch == 'amd64'
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            cmake extra-cmake-modules qtbase5-dev \
-            libqt6core6 libqt6dbus6 qt6-base-dev \
-            qdbus-qt6 pkg-config
-          cmake -B build -DCMAKE_BUILD_TYPE=Release
-          cmake --build build -j"$(nproc)"
+            cmake extra-cmake-modules \
+            qt6-base-dev qt6-base-dev-tools \
+            libgl1-mesa-dev libegl1 libglu1-mesa-dev \
+            pkg-config
+          cmake -B build -DCMAKE_BUILD_TYPE=Release -DQT_VERSION_MAJOR=6
+          cmake --build build -j"$(nproc)" 2>&1 | tee build.log
           ./build/convert-search-plugin --version || true
 
-      - name: Build on arm64 (via docker)
+      - name: Build on arm64 (via docker, Qt6 only)
         if: matrix.arch == 'arm64'
         run: |
           docker run --rm --platform linux/arm64 \
             -v "${{ github.workspace }}":/src -w /src \
             ubuntu:24.04 bash -c '
+              set -e
               apt-get update
               apt-get install -y --no-install-recommends \
-                cmake extra-cmake-modules qtbase5-dev \
-                libqt6core6 libqt6dbus6 qt6-base-dev \
-                qdbus-qt6 pkg-config
-              cmake -B build -DCMAKE_BUILD_TYPE=Release
-              cmake --build build -j"$(nproc)"
+                cmake extra-cmake-modules \
+                qt6-base-dev qt6-base-dev-tools \
+                libgl1-mesa-dev libegl1 libglu1-mesa-dev \
+                pkg-config build-essential
+              # 锁定架构为 arm64，避免 dpkg 探测歧义
+              sed -i "s/^Architecture: any/Architecture: arm64/" debian/control
+              cmake -B build -DCMAKE_BUILD_TYPE=Release -DQT_VERSION_MAJOR=6
+              cmake --build build -j"$(nproc)" 2>&1 | tee build.log
             '
+
+      - name: Show build log on failure
+        if: failure()
+        run: |
+          echo "===== build.log ====="
+          cat build.log || true
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: convert-search-plugin-${{ matrix.arch }}
           path: build/convert-search-plugin
+          if-no-files-found: ignore

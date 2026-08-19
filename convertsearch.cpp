@@ -11,6 +11,7 @@
 #include "providers/datetimeprovider.h"
 #include "providers/colorprovider.h"
 #include "providers/energyprovider.h"
+#include "uosai.h"
 #include "i18n.h"
 
 #include <QJsonDocument>
@@ -166,12 +167,28 @@ QString ConvertSearch::search(const QString &json)
     }
     }
 
+    // UOS AI 联动：对有实质结果（非 help/未识别）的查询，附加「用 UOS AI 处理」卡片，
+    // 点击后将原始查询发送给 UOS AI 对话（见 action 中 convert/uosai 处理）。
+    if (p.type != QueryParser::Type::Help && p.type != QueryParser::Type::None
+        && UosAi::isAvailable()) {
+        ResultBuilder::Item ai;
+        ai.key = "uosai-send";
+        ai.name = I18n::isChinese()
+            ? QString("用 UOS AI 处理：%1").arg(cont)
+            : QString("Process with UOS AI: %1").arg(cont);
+        ai.icon = "deepin-ai-assistant";
+        ai.type = "convert/uosai";
+        // 把原始查询存入 item 字段（复用 key 之外，name 已含文本；action 时直接用 cont）
+        ResultBuilder::addGroup(root, grpHelp, {ai});
+    }
+
     QJsonDocument doc(root);
     QString out = doc.toJson(QJsonDocument::Compact);
 
     {
         QMutexLocker locker(&m_mutex);
         m_lastResults.insert(mID, root);
+        m_lastCont.insert(mID, cont);
     }
     return out;
 }
@@ -185,6 +202,7 @@ bool ConvertSearch::stop(const QString &json)
     QString mID = doc.object().value("mID").toString();
     QMutexLocker locker(&m_mutex);
     m_lastResults.remove(mID);
+    m_lastCont.remove(mID);
     qCDebug(logConvert) << "Stop task:" << mID;
     return true;
 }
@@ -198,9 +216,22 @@ bool ConvertSearch::action(const QString &json)
     QJsonObject root = doc.object();
     QString action = root.value("action").toString();
     QString item = root.value("item").toString();
+    QString mID = root.value("mID").toString();
 
     if (action != "openitem" || item.isEmpty())
         return false;
+
+    // UOS AI 联动项：把原始查询发送给 UOS AI 对话，而非复制到剪贴板
+    if (item == "uosai-send") {
+        QMutexLocker locker(&m_mutex);
+        QString cont = m_lastCont.value(mID);
+        if (cont.isEmpty())
+            return false;
+        locker.unlock();
+        bool ok = UosAi::sendToCopilot(cont);
+        qCInfo(logConvert) << "UOS AI send:" << cont << "ok=" << ok;
+        return ok;
+    }
 
     // 从缓存结果中找到对应 item 的 name（展示文本），复制到剪贴板
     QString text;
