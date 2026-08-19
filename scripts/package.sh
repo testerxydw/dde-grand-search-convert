@@ -26,6 +26,45 @@ JOBS="$(nproc)"
 log() { echo "[package] $*"; }
 err() { echo "[package][ERR] $*" >&2; }
 
+# 仅自增版本号最后一段（如 1.1.0 -> 1.1.1），其余段保持不变。
+# 用法: bump_version 1.1.0  -> 1.1.1
+bump_version() {
+    local v="$1"
+    local main="${v%.*}"      # 去掉最后一段
+    local last="${v##*.}"     # 最后一段
+    if [[ "$last" =~ ^[0-9]+$ ]]; then
+        echo "${main}.$((last + 1))"
+    else
+        echo "$v"
+    fi
+}
+
+# 自动写入新 changelog 条目（版本自增 + 时间戳），供 dh 读取版本号。
+# 必须在调用 dpkg-buildpackage 之前执行。
+bump_changelog() {
+    local new_ver
+    new_ver="$(bump_version "$VERSION")"
+    [[ "$new_ver" == "$VERSION" ]] && { log "版本号无需自增: $VERSION"; return 0; }
+    local now
+    now="$(date -R)"
+    local dist="$(dpkg-parsechangelog -S distribution 2>/dev/null || echo 'unstable')"
+    local new_entry
+    new_entry="$(cat <<EOF
+convert-search-plugin (${new_ver}) ${dist}; urgency=medium
+
+  * 工程：自动打包版本自增（${VERSION} -> ${new_ver}）。
+
+ -- testerxydw <g17729830615@163.com>  ${now}
+
+EOF
+)"
+    # 在文件最前插入新条目
+    printf '%s\n%s\n' "$new_entry" "$(cat debian/changelog)" > debian/changelog.tmp
+    mv debian/changelog.tmp debian/changelog
+    VERSION="$new_ver"
+    log "changelog 已自增至 $VERSION"
+}
+
 check_deps() {
     local missing=()
     for c in cmake dpkg-buildpackage dpkg-parsechangelog; do
@@ -49,10 +88,11 @@ build_with_dpkg() {
         dpkg-buildpackage -us -uc -b -a"$arch" >/dev/null 2>&1 || \
         dpkg-buildpackage -us -uc -b >/dev/null 2>&1
     )
-    # deb 生成在源码目录上级（../）
+    # deb 生成在源码目录上级（../）。取最新生成的 deb（按 mtime 排序），
+    # 避免历史残留的同名旧 deb 被误选。
     local deb
-    deb="$(ls -1 "$src"/../convert-search-plugin_*_${arch}.deb 2>/dev/null | head -1)"
-    [[ -z "$deb" ]] && deb="$(ls -1 "$ROOT"/../convert-search-plugin_*_${arch}.deb 2>/dev/null | head -1)"
+    deb="$(ls -1t "$src"/../convert-search-plugin_*_${arch}.deb 2>/dev/null | head -1)"
+    [[ -z "$deb" ]] && deb="$(ls -1t "$ROOT"/../convert-search-plugin_*_${arch}.deb 2>/dev/null | head -1)"
     [[ -z "$deb" ]] && { err "未找到生成的 deb ($arch)"; return 1; }
     mkdir -p "$DIST_DIR/$arch"
     cp "$deb" "$DIST_DIR/$arch/"
@@ -72,6 +112,10 @@ build_with_dpkg() {
 build_arch() {
     local arch="$1"
     log "构建架构: $arch"
+    # 清理本架构旧的 dist 产物，避免历史 deb / 残留下游 checksum 混淆
+    rm -f "$DIST_DIR/$arch"/convert-search-plugin_*_${arch}.deb \
+          "$DIST_DIR/$arch"/convert-search-plugin_${arch} \
+          "$DIST_DIR/$arch"/SHA256SUMS_${arch}.txt 2>/dev/null || true
     if [[ "$arch" == "$(uname -m)" || "$arch" == "amd64" && "$(uname -m)" == "x86_64" ]]; then
         build_with_dpkg "$arch" "$ROOT"
     elif [[ "$arch" == "arm64" || "$arch" == "aarch64" ]]; then
@@ -111,6 +155,8 @@ build_arch() {
 
 main() {
     check_deps || exit 1
+    # 打包前自动自增版本号末位（写入新 changelog 条目）
+    bump_changelog
     local arches=("$@")
     if [[ ${#arches[@]} -eq 0 ]]; then
         arches=("amd64"); [[ "$(uname -m)" == "aarch64" ]] && arches=("arm64")
