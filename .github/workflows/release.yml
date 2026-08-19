@@ -2,12 +2,14 @@ name: Release
 
 # 触发条件：
 #   1) 推送 tag（如 v1.0.1）
-#   2) 推送 main/master 且 commit message 含 release / publish 关键词
+#   2) 手动 workflow_dispatch
+#   注：推送 main 不再直接触发本流程（避免每次 push 都跑发布）；
+#       如需「commit message 含 release/publish 即发布」，可在 should-release
+#       中结合 push 事件判断。当前保持 tag/手动触发，稳定可靠。
 on:
   push:
     tags:
       - 'v*'
-    branches: [ main, master ]
   workflow_dispatch:
 
 jobs:
