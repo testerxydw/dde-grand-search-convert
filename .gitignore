@@ -11,8 +11,9 @@ debian/*.debhelper.log
 debian/*.substvars
 deblast/debian/debhelper-build-stamp
 debian/files
-debian/convert-search-plugin/  # 临时安装树
-debian/tmp/                     # dh 标准临时安装树
+# 临时安装树（gitignore 不支持行尾 # 注释，须放行首）
+debian/convert-search-plugin/
+debian/tmp/
 *.buildinfo
 *.changes
 *.deb
