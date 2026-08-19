@@ -17,9 +17,14 @@ cmake -B "$BUILD" -DCMAKE_BUILD_TYPE=Debug >/dev/null 2>&1
 cmake --build "$BUILD" -j"$(nproc)" >/dev/null 2>&1
 
 echo "[test] 链接并编译测试..."
-# 收集所有 .o 目标文件
+# 收集所有 .o 目标文件（排除 main.cpp.o，避免与测试 main 冲突）
 OBJS=()
-while IFS= read -r f; do OBJS+=("$f"); done < <(find "$BUILD/CMakeFiles/convert-search-plugin.dir" -name '*.o')
+while IFS= read -r f; do
+    case "$(basename "$f")" in
+        main.cpp.o) continue ;;
+    esac
+    OBJS+=("$f")
+done < <(find "$BUILD/CMakeFiles/convert-search-plugin.dir" -name '*.o')
 
 LIBS="$(pkg-config --libs Qt6Core Qt6Gui Qt6DBus Qt6Network)"
 INCS="$(pkg-config --cflags Qt6Core Qt6Gui Qt6DBus Qt6Network)"

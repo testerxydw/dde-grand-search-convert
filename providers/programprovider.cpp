@@ -28,6 +28,18 @@ Req parseReq(const QString &s)
         r.action = "time";
         return r;
     }
+    // 数字时间戳：纯数字 10 位（秒级）或 13 位（毫秒级）
+    // 需排在日期/计算器之前，避免被误判；含短横线/运算符的不会命中
+    if (QRegularExpression(R"(^\d{10}$)").match(lower).hasMatch()) {
+        r.action = "time";
+        r.content = lower;   // 秒级时间戳
+        return r;
+    }
+    if (QRegularExpression(R"(^\d{13}$)").match(lower).hasMatch()) {
+        r.action = "time";
+        r.content = lower;   // 毫秒级时间戳
+        return r;
+    }
     // base64 / url 编解码：提取 algo，剥离其后动词，剩余为内容
     QString rest = s.trimmed();
     QString algo;
@@ -85,6 +97,30 @@ QList<ResultBuilder::Item> ProgramProvider::run(const QString &text)
     Req r = parseReq(text);
 
     if (r.action == "time") {
+        // 数字时间戳：反查对应日期（支持 10 位秒级 / 13 位毫秒级）
+        if (!r.content.isEmpty()) {
+            bool ok = false;
+            qint64 raw = r.content.toLongLong(&ok);
+            if (ok) {
+                qint64 secs = (r.content.size() == 13) ? raw / 1000 : raw;
+                QDateTime dt = QDateTime::fromSecsSinceEpoch(secs);
+                if (dt.isValid()) {
+                    QString local = dt.toString("yyyy-MM-dd HH:mm:ss");
+                    QString utc = dt.toUTC().toString("yyyy-MM-dd HH:mm:ss");
+                    ResultBuilder::Item it1, it2;
+                    it1.key = "prog-ts-date";
+                    it1.name = QString("%1 → 本地 %2 / UTC %3")
+                                  .arg(r.content).arg(local).arg(utc);
+                    it1.icon = "utilities-terminal"; it1.type = "convert/prog-time";
+                    it2.key = "prog-ts-date-sec";
+                    it2.name = QString("对应秒级时间戳: %1").arg(secs);
+                    it2.icon = "utilities-terminal"; it2.type = "convert/prog-time";
+                    items.append(it1); items.append(it2);
+                    return items;
+                }
+            }
+        }
+        // 当前时间戳
         qint64 secs = QDateTime::currentSecsSinceEpoch();
         qint64 ms = QDateTime::currentMSecsSinceEpoch();
         ResultBuilder::Item it1, it2;

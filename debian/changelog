@@ -3,12 +3,14 @@ convert-search-plugin (1.1.0) unstable; urgency=medium
   * 新增：搜索框使用说明（输入 help/?/使用说明 查看全部功能示例）。
   * 新增：UOS AI 联动（结果卡片一键发送至 com.deepin.copilot 对话）。
   * 新增：热量转换（千卡/千焦/卡互转 + 食物份数参考，服务减肥人群）。
+  * 新增：数字时间戳反查日期（10 位秒级 / 13 位毫秒级 → 本地/UTC 日期）。
   * 优化：所有转换结果说明跟随系统语言国际化（中文/英文）。
   * 优化：未知查询返回友好提示而非静默空结果。
   * 优化：单位换算目标单位支持 to/=/?/空格 多种写法。
   * 工程：一键打包脚本、单元测试、GitHub Actions 双架构构建与自动发布。
+  * 工程：安装包内置 postinst，安装/升级后自动重启 dde-grand-search-daemon 加载新版插件。
 
- -- testerxydw <g17729830615@163.com>  Tue, 18 Aug 2026 20:00:00 +0800
+ -- testerxydw <g17729830615@163.com>  Wed, 19 Aug 2026 12:00:00 +0800
 
 convert-search-plugin (1.0.0) unstable; urgency=medium
 

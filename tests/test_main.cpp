@@ -47,6 +47,22 @@ static void test_parser()
     CHECK(p.type == QueryParser::Type::Energy, "100 kcal -> Energy");
     CHECK(p.from == "kcal", "100 kcal from=kcal");
 
+    // 温度：100F -> Unit(temp)
+    p = QueryParser::parse("100F");
+    CHECK(p.type == QueryParser::Type::Unit, "100F -> Unit");
+    CHECK(p.from == "f", "100F from=f");
+
+    // 重量：100kg=?斤 -> Unit, to=斤
+    p = QueryParser::parse("100kg=?斤");
+    CHECK(p.type == QueryParser::Type::Unit, "100kg=?斤 -> Unit");
+    CHECK(p.from == "kg", "100kg=?斤 from=kg");
+    CHECK(p.to == "斤", "100kg=?斤 to=斤");
+
+    // 数字时间戳：1690000000 -> Program(time)
+    p = QueryParser::parse("1690000000");
+    CHECK(p.type == QueryParser::Type::Program, "1690000000 -> Program");
+
+
     p = QueryParser::parse("12inch");
     CHECK(p.type == QueryParser::Type::Unit && p.to.isEmpty(), "12inch 无 to");
 
@@ -64,6 +80,20 @@ static void test_providers()
     CHECK(!u.isEmpty(), "1kg=?斤 有结果");
     if (!u.isEmpty())
         CHECK(u.first().name.contains("2."), "1kg≈2斤");
+
+    // 温度：100F -> 37.8°C（100°F = 37.78°C）
+    auto tf = UnitProvider::convert(100, "f", "c");
+    CHECK(!tf.isEmpty() && tf.first().name.contains("37.8"), "100F≈37.8°C");
+
+    // 重量：100kg = 200 斤
+    auto kg = UnitProvider::convert(100, "kg", "斤");
+    CHECK(!kg.isEmpty() && kg.first().name.contains("200"), "100kg=200斤");
+
+    // 数字时间戳：1690000000 -> 2023-07-22
+    auto ts = ProgramProvider::run("1690000000");
+    CHECK(!ts.isEmpty() && ts.first().name.contains("2023-07-22"),
+          "1690000000 -> 2023-07-22");
+
 
     // 计算器：100 整数应含 HEX
     auto c = CalcProvider::eval("100");

@@ -263,7 +263,15 @@ bool ConvertSearch::action(const QString &json)
                             || !qEnvironmentVariableIsEmpty("WAYLAND_DISPLAY");
     if (!hasDisplay)
         return false;
-    QGuiApplication::clipboard()->setText(text);
+    // offscreen 等无剪贴板后端的平台调用 setText 会触发 Qt 内部段错误，
+    // 直接跳过（真实 xcb/wayland 桌面会话有可用剪贴板，正常复制）
+    if (QGuiApplication::platformName() == "offscreen")
+        return false;
+    // 剪贴板可能不可用（部分平台/会话返回 nullptr），判空避免段错误
+    QClipboard *cb = QGuiApplication::clipboard();
+    if (!cb)
+        return false;
+    cb->setText(text);
     qCInfo(logConvert) << "Copied to clipboard:" << text;
     return true;
 }

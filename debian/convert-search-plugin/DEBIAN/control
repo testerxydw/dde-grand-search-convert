@@ -1,0 +1,15 @@
+Package: convert-search-plugin
+Version: 1.1.0
+Architecture: amd64
+Maintainer: testerxydw <g17729830615@163.com>
+Installed-Size: 311
+Depends: libc6 (>= 2.38), libgcc-s1 (>= 3.0), libqt6core6 (>= 6.8.0), libqt6dbus6 (>= 6.1.2), libqt6gui6 (>= 6.1.2), libqt6network6 (>= 6.1.2), libstdc++6 (>= 5), dde-grand-search
+Section: utils
+Priority: optional
+Description: DDE Grand Search 的单位/汇率/时间转换插件
+ 在 DDE 全局搜索栏中直接完成单位换算（长度/重量/温度/面积/体积/速度/数据）、
+ 汇率换算（联网获取+本地缓存+离线降级）与跨时区时间查询。结果以卡片展示，
+ 点击即复制到剪贴板。
+ Convert units (length/weight/temperature/...), exchange rates (online with
+ local cache and offline fallback), and cross-timezone time right from the
+ DDE Grand Search bar. Results show as cards; click to copy to clipboard.

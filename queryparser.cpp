@@ -264,7 +264,9 @@ Parsed parse(const QString &input)
 
     // 6) 程序员工具：含 base64/ascii/url/hash/时间戳 等关键词
     // 保留原始大小写（ascii A 与 a 结果不同）
-    if (containsProgramKeyword(s) && !containsTimeKeyword(s)) {
+    // 纯数字 10 位（秒级）/13 位（毫秒级）时间戳也归此分支（见 programprovider）
+    if ((containsProgramKeyword(s) || QRegularExpression(R"(^\d{10}$|^\d{13}$)").match(s).hasMatch())
+        && !containsTimeKeyword(s)) {
         p.type = Type::Program;
         p.text = p.raw;
         return p;
