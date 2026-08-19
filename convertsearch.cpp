@@ -4,6 +4,7 @@
 #include "convertsearch.h"
 #include "queryparser.h"
 #include "resultbuilder.h"
+#include "clipboard.h"
 #include "providers/unitprovider.h"
 #include "providers/timeprovider.h"
 #include "providers/calcprovider.h"
@@ -18,7 +19,6 @@
 #include <QJsonParseError>
 #include <QJsonArray>
 #include <QGuiApplication>
-#include <QClipboard>
 #include <QLoggingCategory>
 
 Q_LOGGING_CATEGORY(logConvert, "convert.search.plugin")
@@ -258,20 +258,10 @@ bool ConvertSearch::action(const QString &json)
     if (text.isEmpty())
         return false;
 
-    // 仅在存在显示会话时操作剪贴板，避免无 GUI 环境（headless）下阻塞
-    const bool hasDisplay = !qEnvironmentVariableIsEmpty("DISPLAY")
-                            || !qEnvironmentVariableIsEmpty("WAYLAND_DISPLAY");
-    if (!hasDisplay)
-        return false;
-    // offscreen 等无剪贴板后端的平台调用 setText 会触发 Qt 内部段错误，
-    // 直接跳过（真实 xcb/wayland 桌面会话有可用剪贴板，正常复制）
-    if (QGuiApplication::platformName() == "offscreen")
-        return false;
-    // 剪贴板可能不可用（部分平台/会话返回 nullptr），判空避免段错误
-    QClipboard *cb = QGuiApplication::clipboard();
-    if (!cb)
-        return false;
-    cb->setText(text);
-    qCInfo(logConvert) << "Copied to clipboard:" << text;
-    return true;
+    // 写入系统剪贴板（Qt clipboard 优先，失败回退 deepin 剪贴板 DBus 服务）。
+    // 由 Clipboard::setText 统一处理无头环境，不依赖本进程 DISPLAY 环境变量。
+    const bool ok = Clipboard::setText(text);
+    if (ok)
+        qCInfo(logConvert) << "Copied to clipboard:" << text;
+    return ok;
 }

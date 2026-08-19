@@ -34,6 +34,8 @@ set(PLUGIN_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/convertsearch.h
     ${CMAKE_CURRENT_SOURCE_DIR}/convertsearch.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/clipboard.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/clipboard.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/queryparser.h
     ${CMAKE_CURRENT_SOURCE_DIR}/queryparser.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/resultbuilder.h

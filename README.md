@@ -34,6 +34,8 @@
 ### 通用交互 / Common
 - **分组卡片**：结果按类型分组成卡片，每组可含多条。
 - **点击复制**：点击任意结果即复制到系统剪贴板（复用官方 Action 模式）。
+  复制由插件在收到前端 `openitem` Action 时直接写入系统剪贴板完成，效果等同于 Ctrl+C；
+  插件运行在独立 DBus 服务中，无法拦截搜索框的 Ctrl+C 键盘事件，故统一以"点击即复制"实现。
 - **国际化说明**：所有结果跟随**系统语言**附加说明，例如
   - 中文：`3.00 km（千米/公里） = 3,000.0000 m（米）`、`100.00 USD（美元） = 725.00 CNY（人民币）`
   - 英文：`3.00 km (kilometer) = 3,000.0000 m (meter)`、`100.00 USD (US Dollar) = 725.00 CNY (Chinese Yuan)`
@@ -231,10 +233,13 @@ AI 即处理」的无缝联动。
 
 - 当系统已启用 UOS AI，且有实质查询结果时，结果区会多出一条
   **「用 UOS AI 处理：<你的输入>」** 卡片（即「检测到输入后可调用 UOS AI 自动处理」的体现）。
-- 点击该卡片，插件通过 DBus 调起 UOS AI 对话页（`launchChatPage`），并把原始查询写入系统
-  剪贴板，便于你在对话中直接粘贴发起对话；同时首次调用会向 UOS AI 注册本应用与命令提示
-  （`registerApp` / `registerAppCmdPrompts`）。
+- 点击该卡片，插件通过 DBus 调起 UOS AI 对话页（`launchChatPage`）；若系统 UOS AI 提供
+  「直接送入输入框」的接口（`SendMessage`/`SendText`/`PushQuestion` 等，按版本自动探测），
+  则文本会**自动填入** AI 输入框；并始终把原始查询写入系统剪贴板作为兜底，便于你直接粘贴发起对话。
+  首次调用会向 UOS AI 注册本应用与命令提示（`registerApp` / `registerAppCmdPrompts`）。
 - 实现位于 `uosai.cpp`，所有调用**容错**：UOS AI 不可用时不显示入口、不影响主功能。
+  若自动填入未生效，请在终端执行 `qdbus com.deepin.copilot /com/deepin/copilot` 确认接口名，
+  并把方法列表反馈给开发者以补全对应发送方法。
 - 说明：全局搜索**输入框下方的提示条**属 dde-grand-search 前端 QML（不在本插件仓库范围）；
   本插件提供后端联动能力（结果卡片 + DBus 调起），前端提示条可由 dde-grand-search 基于
   本插件的 `convert/uosai` 结果项实现。

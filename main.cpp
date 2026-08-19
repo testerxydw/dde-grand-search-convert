@@ -4,17 +4,26 @@
 #include "convertsearch.h"
 #include "searchpluginadaptor.h"
 
-#include <QCoreApplication>
+#include <QGuiApplication>
 #include <QDBusConnection>
 #include <QDBusError>
 #include <QLoggingCategory>
+#include <QGuiApplication>
 
 #define DBUS_SERVICE_NAME "org.deepin.grandsearch.convert"
 #define DBUS_OBJECT_PATH  "/org/deepin/grandsearch/convert"
 
 int main(int argc, char *argv[])
 {
-    QCoreApplication app(argc, argv);
+    // 守护进程运行在用户会话中，使用 QGuiApplication 以便通过 Qt clipboard
+    // 或 deepin 剪贴板 DBus 服务写入系统剪贴板（点击复制 / UOS AI 传内容）。
+    // 无显示环境（CI/headless）默认 offscreen，保证进程仍可启动（剪贴板走 DBus 回退）。
+    if (qEnvironmentVariableIsEmpty("QT_QPA_PLATFORM")
+        && qEnvironmentVariableIsEmpty("DISPLAY")
+        && qEnvironmentVariableIsEmpty("WAYLAND_DISPLAY")) {
+        qputenv("QT_QPA_PLATFORM", "offscreen");
+    }
+    QGuiApplication app(argc, argv);
     app.setApplicationName("convert-search-plugin");
     QLoggingCategory::setFilterRules("convert.search.plugin.debug=true");
 

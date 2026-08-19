@@ -12,6 +12,7 @@ debian/*.substvars
 deblast/debian/debhelper-build-stamp
 debian/files
 debian/convert-search-plugin/  # 临时安装树
+debian/tmp/                     # dh 标准临时安装树
 *.buildinfo
 *.changes
 *.deb

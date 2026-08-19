@@ -82,6 +82,10 @@ check_deps() {
 build_with_dpkg() {
     local arch="$1" src="$2"
     log "dpkg-buildpackage ($arch)"
+    # 清理上级目录历史残留的同名产物，避免误取旧 deb（dpkg 把产物吐到 $src/../）
+    rm -f "$src"/../convert-search-plugin_*_${arch}.deb \
+          "$src"/../convert-search-plugin_*_${arch}.changes \
+          "$src"/../convert-search-plugin_*_${arch}.buildinfo 2>/dev/null || true
     (
         cd "$src"
         # -us -uc: 不签名; -b: 仅二进制; -a<arch>: 目标架构
@@ -89,7 +93,7 @@ build_with_dpkg() {
         dpkg-buildpackage -us -uc -b >/dev/null 2>&1
     )
     # deb 生成在源码目录上级（../）。取最新生成的 deb（按 mtime 排序），
-    # 避免历史残留的同名旧 deb 被误选。
+    # 历史残留已在上方清理，此处取到的即为本次产物。
     local deb
     deb="$(ls -1t "$src"/../convert-search-plugin_*_${arch}.deb 2>/dev/null | head -1)"
     [[ -z "$deb" ]] && deb="$(ls -1t "$ROOT"/../convert-search-plugin_*_${arch}.deb 2>/dev/null | head -1)"
