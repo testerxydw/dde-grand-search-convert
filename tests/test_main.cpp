@@ -182,6 +182,29 @@ static void test_providers()
     CHECK(!pr.isEmpty() && pr.first().name.contains("5d41402abc4b2a76b9719d911017c592"),
           "md5 hello 正确");
 
+    // 程序：hash hello 无算法 → MD5/SHA1/SHA256 全给三条
+    auto ph = ProgramProvider::run("hash hello");
+    int hashCount = 0;
+    for (const auto &it : ph)
+        if (it.type == "convert/prog-hash") hashCount++;
+    CHECK(hashCount == 3, "hash hello → 三种算法全给");
+
+    // 程序：ascii 多字符 → 逐字符映射
+    auto pa = ProgramProvider::run("ascii hello");
+    bool asciiMulti = false;
+    for (const auto &it : pa)
+        if (it.type == "convert/prog-ascii" && it.name.contains("'h'=104")) asciiMulti = true;
+    CHECK(asciiMulti, "ascii hello → 逐字符映射");
+
+    // 程序：base64 encode 附解码验证（含回显 hello）
+    auto pb = ProgramProvider::run("base64 encode hello");
+    int b64Count = 0; bool verifyHasHello = false;
+    for (const auto &it : pb) {
+        if (it.type == "convert/prog-base64") b64Count++;
+        if (it.name.contains("hello")) verifyHasHello = true;
+    }
+    CHECK(b64Count >= 2 && verifyHasHello, "base64 encode 附解码验证(>=2条,回显hello)");
+
     // 日期：2025-01-01 到 2025-12-31
     auto d = DateTimeProvider::run("2025-01-01 到 2025-12-31");
     CHECK(!d.isEmpty() && d.first().name.contains("364"), "日期差 364 天");

@@ -17,6 +17,7 @@ struct Req {
     QString action;  // encode/decode/hash/ascii/time
     QString algo;    // base64/url/md5/sha1/sha256
     QString content; // 待处理文本
+    bool hashAll = false; // 裸 hash/哈希（未指定算法）→ 同时给 MD5/SHA1/SHA256
 };
 
 Req parseReq(const QString &s)
@@ -56,17 +57,23 @@ Req parseReq(const QString &s)
         r.content = content;
         return r;
     }
-    // 哈希：md5 / sha1 / sha256 + 内容
-    QRegularExpression hashRe(R"((md5|sha1|sha256|sha|哈希|hash)\s*(.+))");
-    QRegularExpressionMatch hm = hashRe.match(s.trimmed());
-    if (hm.hasMatch()) {
-        QString algo = hm.captured(1).toLower();
-        QString content = hm.captured(2).trimmed();
+    // 哈希：md5 / sha1 / sha256 / sha + 内容；裸 hash/哈希 + 内容 → 三种全给
+    // 显式算法词：md5 / sha1 / sha256 / sha（sha 视作 sha1）
+    QRegularExpression hashSpecRe(R"((md5|sha1|sha256)\s+(.+))");
+    QRegularExpressionMatch hsm = hashSpecRe.match(s.trimmed());
+    if (hsm.hasMatch()) {
         r.action = "hash";
-        if (algo.contains("sha256")) r.algo = "sha256";
-        else if (algo.contains("sha1")) r.algo = "sha1";
-        else r.algo = "md5";
-        r.content = content;
+        r.algo = hsm.captured(1).toLower();
+        r.content = hsm.captured(2).trimmed();
+        return r;
+    }
+    // 裸 hash/哈希 + 内容 → 全给三种
+    QRegularExpression hashAllRe(R"((?:hash|哈希)\s+(.+))");
+    QRegularExpressionMatch ham = hashAllRe.match(s.trimmed());
+    if (ham.hasMatch()) {
+        r.action = "hash";
+        r.hashAll = true;
+        r.content = ham.captured(1).trimmed();
         return r;
     }
     // ascii：单字符或字符 + ascii 关键词
@@ -133,7 +140,7 @@ QList<ResultBuilder::Item> ProgramProvider::run(const QString &text)
     }
 
     if (r.action == "ascii") {
-        // 支持「A」或「65」双向
+        // 数字 → 码值查字符
         bool isNum = false;
         int code = r.content.toInt(&isNum);
         if (isNum && code >= 0 && code <= 127) {
@@ -143,24 +150,50 @@ QList<ResultBuilder::Item> ProgramProvider::run(const QString &text)
             it.icon = "utilities-terminal"; it.type = "convert/prog-ascii";
             items.append(it);
         } else if (!r.content.isEmpty()) {
-            QChar ch = r.content[0];
-            ResultBuilder::Item it;
-            it.key = "prog-ascii";
-            it.name = QString("'%1' = ASCII %2 (0x%3)")
-                .arg(ch).arg((int)ch.toLatin1()).arg((int)ch.toLatin1(), 0, 16);
-            it.icon = "utilities-terminal"; it.type = "convert/prog-ascii";
-            items.append(it);
+            if (r.content.size() == 1) {
+                // 单字符 → 码值
+                QChar ch = r.content[0];
+                ResultBuilder::Item it;
+                it.key = "prog-ascii";
+                it.name = QString("'%1' = ASCII %2 (0x%3)")
+                    .arg(ch).arg((int)ch.toLatin1()).arg((int)ch.toLatin1(), 0, 16);
+                it.icon = "utilities-terminal"; it.type = "convert/prog-ascii";
+                items.append(it);
+            } else {
+                // 多字符 → 逐字符紧凑映射（易用性）
+                QStringList maps;
+                for (QChar ch : r.content) {
+                    int v = ch.toLatin1();
+                    maps << QString("'%1'=%2").arg(ch).arg(v);
+                }
+                ResultBuilder::Item it;
+                it.key = "prog-ascii-multi";
+                it.name = QString("ASCII: %1").arg(maps.join("  "));
+                it.icon = "utilities-terminal"; it.type = "convert/prog-ascii";
+                items.append(it);
+            }
         }
         return items;
     }
 
     if (r.action == "hash") {
         QByteArray data = r.content.toUtf8();
-        ResultBuilder::Item it;
-        it.key = "prog-hash";
-        it.name = QString("%1: %2").arg(r.algo.toUpper()).arg(hashOf(r.algo, data));
-        it.icon = "utilities-terminal"; it.type = "convert/prog-hash";
-        items.append(it);
+        if (r.hashAll) {
+            // 裸 hash/哈希 → MD5/SHA1/SHA256 全给（不舍上限）
+            for (const QString &algo : {"md5", "sha1", "sha256"}) {
+                ResultBuilder::Item it;
+                it.key = QString("prog-hash-%1").arg(algo);
+                it.name = QString("%1: %2").arg(algo.toUpper()).arg(hashOf(algo, data));
+                it.icon = "utilities-terminal"; it.type = "convert/prog-hash";
+                items.append(it);
+            }
+        } else {
+            ResultBuilder::Item it;
+            it.key = "prog-hash";
+            it.name = QString("%1: %2").arg(r.algo.toUpper()).arg(hashOf(r.algo, data));
+            it.icon = "utilities-terminal"; it.type = "convert/prog-hash";
+            items.append(it);
+        }
         return items;
     }
 
@@ -206,6 +239,31 @@ QList<ResultBuilder::Item> ProgramProvider::run(const QString &text)
         it.icon = "utilities-terminal";
         it.type = QString("convert/prog-%1").arg(r.algo);
         items.append(it);
+
+        // 编码结果附解码验证行（base64/url 均可逆，便于核对）
+        if (r.action == "encode") {
+            QString verify;
+            if (r.algo == "base64")
+                verify = QString::fromUtf8(QByteArray::fromBase64(result.toUtf8()));
+            else {
+                QString in = result;
+                QByteArray out;
+                for (int i = 0; i < in.size(); ++i) {
+                    if (in[i] == '%' && i + 2 < in.size()) {
+                        bool ok = false;
+                        int v = in.mid(i + 1, 2).toInt(&ok, 16);
+                        if (ok) { out.append((char)v); i += 2; continue; }
+                    }
+                    out.append(in[i].toLatin1());
+                }
+                verify = QString::fromUtf8(out);
+            }
+            ResultBuilder::Item vit;
+            vit.key = QString("prog-%1-verify").arg(r.algo);
+            vit.name = QString("解码验证: %1").arg(verify);
+            vit.icon = "utilities-terminal"; vit.type = QString("convert/prog-%1").arg(r.algo);
+            items.append(vit);
+        }
         return items;
     }
 
