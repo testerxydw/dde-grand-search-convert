@@ -10,7 +10,7 @@
 #include <QDBusMessage>
 #include <QDBusReply>
 #include <QLoggingCategory>
-#include <QVariantMap>
+#include <QMap>
 
 Q_LOGGING_CATEGORY(logUosAi, "convert.search.uosai")
 
@@ -48,7 +48,10 @@ bool sendTextViaInputPrompt(const QString &text)
         qCWarning(logUosAi) << "UOS AI chat interface invalid";
         return false;
     }
-    QDBusMessage msg = iface.call("inputPrompt", text, QVariantMap());
+    // 严格匹配签名 inputPrompt(s a{ss})：用 QMap<QString,QString> 经 QVariant::fromValue
+    // 包装，序列化为 a{ss}（值类型为 string），避免 QVariantMap 被编成 a{sv}（variant）。
+    QMap<QString, QString> ext;
+    QDBusMessage msg = iface.call("inputPrompt", text, QVariant::fromValue(ext));
     if (msg.type() == QDBusMessage::ErrorMessage) {
         qCWarning(logUosAi) << "UOS AI inputPrompt failed:" << msg.errorMessage();
         return false;

@@ -28,6 +28,11 @@ public:
     // 把 root 序列化为紧凑 JSON 字符串
     static QString toJson(QJsonObject &root, const QString &mID);
 
+    // 数值格式化：最多保留 maxDecimals 位小数，并去掉无意义尾零。
+    // 例：formatNumber(200, 4) -> "200"；formatNumber(0.333333,4) -> "0.3333"。
+    // 用于消除固定 'f' 格式产生的过多尾零（如 200.0000）。
+    static QString formatNumber(double value, int maxDecimals);
+
 private:
     static QJsonObject makeRoot(const QString &mID);
 };

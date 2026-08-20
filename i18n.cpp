@@ -176,6 +176,7 @@ const QHash<QString, UnitText> &groupTable()
         {"date",       {"日期", "Date"}},
         {"color",      {"颜色", "Color"}},
         {"energy",     {"热量", "Energy"}},
+        {"help",       {"万能转换使用说明", "Help"}},
     };
     return t;
 }

@@ -147,6 +147,39 @@ static bool matchCalc(const QString &s, QString &expr)
     return false;
 }
 
+// 触发词（多语言别名）：前缀命中直接短路到对应类型，剩余内容沿用原特征匹配。
+// 不新建抽象：仅静态表 + 前缀匹配，各类型仍指向现有 provider 分支。
+static const QHash<QueryParser::Type, QStringList> kTriggerWords = {
+    {QueryParser::Type::Currency, {"汇率", "换汇", "currency", "exchange"}},
+    {QueryParser::Type::Unit,     {"换算", "单位", "convert", "unit"}},
+    {QueryParser::Type::Time,     {"时间", "时区", "time", "timezone"}},
+    {QueryParser::Type::Calc,     {"计算", "算", "calc", "calculate"}},
+    {QueryParser::Type::Program,  {"编码", "哈希", "时间戳", "encode", "hash", "timestamp"}},
+    {QueryParser::Type::DateTime, {"日期", "倒数", "date", "countdown",
+                                   "转时间戳", "时间戳转", "to-timestamp", "timestamp-of"}},
+    {QueryParser::Type::Color,    {"颜色", "color"}},
+    {QueryParser::Type::Energy,   {"热量", "卡路里", "energy", "calorie"}},
+};
+
+// 若 input 以某触发词 + 分隔符开头，返回对应类型与去掉前缀后的剩余内容；否则返回 None。
+static QueryParser::Type matchTrigger(const QString &s, QString &rest)
+{
+    for (auto it = kTriggerWords.begin(); it != kTriggerWords.end(); ++it) {
+        for (const QString &kw : it.value()) {
+            if (s.startsWith(kw)) {
+                QString r = s.mid(kw.size()).trimmed();
+                // 允许触发词后紧跟分隔符 : ： ? 再接内容
+                if (r.startsWith(QLatin1Char(':')) || r.startsWith(QLatin1Char('：'))
+                    || r.startsWith(QLatin1Char('?')))
+                    r = r.mid(1).trimmed();
+                rest = r;
+                return it.key();
+            }
+        }
+    }
+    return QueryParser::Type::None;
+}
+
 Parsed parse(const QString &input)
 {
     Parsed p;
@@ -161,6 +194,24 @@ Parsed parse(const QString &input)
         || s == "用法" || s == "怎么用" || s == "功能" || s == "menu") {
         p.type = Type::Help;
         return p;
+    }
+
+    // 0.5) 触发词前缀短路：命中则剥离前缀，剩余内容交给原特征匹配（递归一次，复用全部规则）。
+    // 例：「转时间戳 2026-08-20 15:03:28」→ DateTime；「时间戳 1690000000」→ Program（当前时间戳）。
+    {
+        QString rest;
+        QueryParser::Type t = matchTrigger(s, rest);
+        if (t != QueryParser::Type::None) {
+            if (rest.isEmpty()) {
+                // 仅有触发词无内容：仍按原逻辑（如「时间戳」单独给当前时间戳）
+                p.type = t;
+                p.text = p.raw;
+                return p;
+            }
+            Parsed sub = parse(rest);
+            sub.raw = p.raw; // 保留原始大小写（ascii 等大小写敏感场景）
+            return sub;
+        }
     }
 
     // 1) 货币：符号或代码出现在数字附近
@@ -275,9 +326,11 @@ Parsed parse(const QString &input)
     // 7) 日期/倒数日：提取到日期即命中（无需关键词，避免与计算器/单位冲突）
     {
         // 复用 DateTimeProvider 的日期抽取逻辑过于重，这里做轻量判定：
-        // 含 YYYY-MM-DD 等日期形态，或含倒数日/距/date 等关键词
+        // 含 YYYY-MM-DD 等日期形态、中文年月日（含时分秒）或倒数日/距/date 等关键词
         QRegularExpression dateRe(R"(\d{4}[-./]\d{1,2}[-./]\d{1,2})");
-        if (dateRe.match(s).hasMatch() || containsDateKeyword(s)) {
+        QRegularExpression cnDateRe(R"(\d{4}\s*年\s*\d{1,2}\s*月\s*\d{1,2})");
+        if (dateRe.match(s).hasMatch() || cnDateRe.match(s).hasMatch()
+            || containsDateKeyword(s)) {
             p.type = Type::DateTime;
             p.text = p.raw;
             return p;

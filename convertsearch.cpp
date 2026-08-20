@@ -106,7 +106,7 @@ QString ConvertSearch::search(const QString &json)
     const QString grpDate = I18n::groupName("date");
     const QString grpColor = I18n::groupName("color");
     const QString grpEnergy = I18n::groupName("energy");
-    const QString grpHelp = I18n::isChinese() ? "使用说明" : "Help";
+    const QString grpHelp = I18n::groupName("help");
 
     switch (p.type) {
     case QueryParser::Type::Currency: {

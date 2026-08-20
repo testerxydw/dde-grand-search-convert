@@ -71,6 +71,26 @@ static void test_parser()
 
     p = QueryParser::parse("255 to hex");
     CHECK(p.type == QueryParser::Type::Calc, "255 to hex -> Calc");
+
+    // 触发词前缀（多语言）短路，剩余内容沿用特征匹配
+    p = QueryParser::parse("汇率 100usd");
+    CHECK(p.type == QueryParser::Type::Currency, "汇率 100usd -> Currency");
+
+    p = QueryParser::parse("convert 1kg 斤");
+    CHECK(p.type == QueryParser::Type::Unit && p.to == "斤", "convert 1kg 斤 -> Unit");
+
+    p = QueryParser::parse("转时间戳 2026-08-20 15:03:28");
+    CHECK(p.type == QueryParser::Type::DateTime, "转时间戳 ... -> DateTime");
+
+    p = QueryParser::parse("时间戳 1690000000");
+    CHECK(p.type == QueryParser::Type::Program, "时间戳 1690000000 -> Program");
+
+    p = QueryParser::parse("date 2025-01-01 到 2025-12-31");
+    CHECK(p.type == QueryParser::Type::DateTime, "date ... -> DateTime");
+
+    // 触发词 + 冒号分隔
+    p = QueryParser::parse("颜色:#ff8800");
+    CHECK(p.type == QueryParser::Type::Color, "颜色:#ff8800 -> Color");
 }
 
 static void test_providers()
@@ -79,7 +99,7 @@ static void test_providers()
     auto u = UnitProvider::convert(1, "kg", "斤");
     CHECK(!u.isEmpty(), "1kg=?斤 有结果");
     if (!u.isEmpty())
-        CHECK(u.first().name.contains("2."), "1kg≈2斤");
+        CHECK(u.first().name.contains("2"), "1kg≈2斤");
 
     // 温度：100F -> 37.8°C（100°F = 37.78°C）
     auto tf = UnitProvider::convert(100, "f", "c");
@@ -117,7 +137,7 @@ static void test_providers()
 
     // 热量：100 kcal -> 418.40 kj
     auto e = EnergyProvider::convert(100, "kcal", "kj");
-    CHECK(!e.isEmpty() && e.first().name.contains("418.40"), "100kcal=418.40kj");
+    CHECK(!e.isEmpty() && e.first().name.contains("418.4"), "100kcal=418.4kj");
 }
 
 static void test_i18n()

@@ -150,9 +150,9 @@ QList<ResultBuilder::Item> UnitProvider::convert(double value, const QString &fr
             ResultBuilder::Item it;
             it.key = QString("unit-temp-%1-%2").arg(value).arg(ts);
             it.name = QString("%1%2 = %3%4")
-                          .arg(QLocale().toString(value, 'f', 1))
+                          .arg(ResultBuilder::formatNumber(value, 1))
                           .arg(tempLabel(f))
-                          .arg(QLocale().toString(out, 'f', 1))
+                          .arg(ResultBuilder::formatNumber(out, 1))
                           .arg(tempLabel(ts));
             it.icon = "preferences-system";
             it.type = "convert/unit-temp";
@@ -180,8 +180,8 @@ QList<ResultBuilder::Item> UnitProvider::convert(double value, const QString &fr
             ResultBuilder::Item it;
             it.key = QString("unit-%1-%2-%3").arg(cat).arg(value).arg(norm(tt));
             it.name = QString("%1 %2 = %3 %4")
-                          .arg(QLocale().toString(value, 'f', 2)).arg(unitDisplay(from))
-                          .arg(QLocale().toString(out, 'f', 4)).arg(unitDisplay(tt));
+                          .arg(ResultBuilder::formatNumber(value, 2)).arg(unitDisplay(from))
+                          .arg(ResultBuilder::formatNumber(out, 4)).arg(unitDisplay(tt));
             it.icon = "preferences-system";
             it.type = type;
             items.append(it);

@@ -8,7 +8,6 @@
 #include <QDBusConnection>
 #include <QDBusError>
 #include <QLoggingCategory>
-#include <QGuiApplication>
 
 #define DBUS_SERVICE_NAME "org.deepin.grandsearch.convert"
 #define DBUS_OBJECT_PATH  "/org/deepin/grandsearch/convert"

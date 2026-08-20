@@ -62,3 +62,17 @@ QString ResultBuilder::toJson(QJsonObject &root, const QString &mID)
     QJsonDocument doc(root);
     return doc.toJson(QJsonDocument::Compact);
 }
+
+QString ResultBuilder::formatNumber(double value, int maxDecimals)
+{
+    // 先按固定精度格式化为字符串（如 "200.0000" / "0.3333"），再去掉尾零。
+    QString s = QLocale().toString(value, 'f', qMax(0, maxDecimals));
+    if (s.contains(QLocale().decimalPoint())) {
+        // 先去掉尾零，再去掉孤立的小数点。
+        while (s.endsWith('0'))
+            s.chop(1);
+        if (s.endsWith(QLocale().decimalPoint()))
+            s.chop(1);
+    }
+    return s;
+}

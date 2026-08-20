@@ -5,6 +5,7 @@
 
 #include <QRegularExpression>
 #include <QDate>
+#include <QDateTime>
 #include <QLocale>
 
 namespace {
@@ -34,6 +35,33 @@ QList<QDate> extractDates(const QString &s)
     return out;
 }
 
+// 提取完整日期时间（含时分秒），支持「2026年08月20日 15:03:28」「2026-08-20 15:03:28」等。
+// 返回本地时区的 QDateTime；无法解析返回无效对象。
+QDateTime extractDateTime(const QString &s)
+{
+    // 中文形态：2026年08月20日 15:03:28（星期几/CST 等冗余词忽略）
+    QRegularExpression cnRe(R"((\d{4})年\s*(\d{1,2})月\s*(\d{1,2})[日号]?\s*(\d{1,2})[:：](\d{1,2})(?:[:：](\d{1,2}))?)");
+    QRegularExpressionMatch cm = cnRe.match(s);
+    if (cm.hasMatch()) {
+        QDateTime dt(QDate(cm.captured(1).toInt(), cm.captured(2).toInt(), cm.captured(3).toInt()),
+                     QTime(cm.captured(4).toInt(), cm.captured(5).toInt(),
+                           cm.captured(6).isEmpty() ? 0 : cm.captured(6).toInt()));
+        if (dt.isValid())
+            return dt;
+    }
+    // 标准形态：2026-08-20 15:03:28（或 / . 分隔）
+    QRegularExpression stdRe(R"((\d{4})[-./](\d{1,2})[-./](\d{1,2})\s+(\d{1,2})[:：](\d{1,2})(?:[:：](\d{1,2}))?)");
+    QRegularExpressionMatch sm = stdRe.match(s);
+    if (sm.hasMatch()) {
+        QDateTime dt(QDate(sm.captured(1).toInt(), sm.captured(2).toInt(), sm.captured(3).toInt()),
+                     QTime(sm.captured(4).toInt(), sm.captured(5).toInt(),
+                           sm.captured(6).isEmpty() ? 0 : sm.captured(6).toInt()));
+        if (dt.isValid())
+            return dt;
+    }
+    return QDateTime();
+}
+
 QString weekdayText(const QDate &d)
 {
     return QLocale(QLocale::Chinese).toString(d, "yyyy-MM-dd dddd");
@@ -47,6 +75,22 @@ QList<ResultBuilder::Item> DateTimeProvider::run(const QString &text)
     QList<QDate> dates = extractDates(text);
     QDate today = QDate::currentDate();
     QString lower = text.toLower();
+
+    // 情况0：完整日期时间 → 时间戳（秒级 / 毫秒级）
+    // 例如「2026年08月20日 15:03:28」「2026-08-20 15:03:28」。
+    QDateTime dt = extractDateTime(text);
+    if (dt.isValid()) {
+        qint64 secs = dt.toSecsSinceEpoch();
+        qint64 ms = dt.toMSecsSinceEpoch();
+        ResultBuilder::Item it;
+        it.key = "date-to-ts";
+        it.name = QString("%1\n时间戳(秒): %2\n时间戳(毫秒): %3")
+            .arg(QLocale(QLocale::Chinese).toString(dt, "yyyy-MM-dd dddd HH:mm:ss"))
+            .arg(secs).arg(ms);
+        it.icon = "office-calendar"; it.type = "convert/date-to-timestamp";
+        items.append(it);
+        return items;
+    }
 
     // 情况1：两个日期 → 日期差
     if (dates.size() >= 2) {

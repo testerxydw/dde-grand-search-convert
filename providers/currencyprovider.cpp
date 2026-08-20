@@ -76,8 +76,8 @@ QList<ResultBuilder::Item> CurrencyProvider::convert(double value, const QString
         ResultBuilder::Item it;
         it.key = QString("cur-%1-%2-%3").arg(from.toUpper()).arg(value).arg(tc);
         it.name = QString("%1 %2 = %3 %4")
-            .arg(QLocale().toString(value, 'f', 2)).arg(currencyDisplay(from.toUpper()))
-            .arg(QLocale().toString(out, 'f', 2)).arg(currencyDisplay(tc));
+            .arg(ResultBuilder::formatNumber(value, 2)).arg(currencyDisplay(from.toUpper()))
+            .arg(ResultBuilder::formatNumber(out, 2)).arg(currencyDisplay(tc));
         it.icon = "preferences-system"; // 货币图标主题名，依环境
         it.type = "convert/currency";
         items.append(it);
@@ -98,7 +98,11 @@ void CurrencyProvider::fetchRates()
         nam = new QNetworkAccessManager(this);
 
     QUrl url("https://api.frankfurter.app/latest?from=CNY&to=USD,EUR,JPY,GBP,HKD,KRW");
-    QNetworkReply *reply = nam->get(QNetworkRequest(url));
+    QNetworkRequest req(url);
+    // 网络超时保护：弱网/无网时避免 reply 长时间挂起、m_fetching 一直为 true 不再重试。
+    // convert() 本身只读缓存（静态降级表兜底），超时不影响搜索结果返回。
+    req.setTransferTimeout(8000); // 8 秒
+    QNetworkReply *reply = nam->get(req);
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         m_fetching = false;
         if (reply->error() == QNetworkReply::NoError) {

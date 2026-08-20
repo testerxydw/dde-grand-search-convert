@@ -3,6 +3,7 @@
 
 #include "energyprovider.h"
 #include "i18n.h"
+#include "resultbuilder.h"
 
 #include <QRegularExpression>
 
@@ -71,7 +72,7 @@ QList<ResultBuilder::Item> EnergyProvider::convert(double value, const QString &
 
     auto displayUnit = [](double v, const QString &u) -> QString {
         QString label = I18n::unitName(norm(u));
-        return QString("%1 %2").arg(QLocale().toString(v, 'f', 2)).arg(label);
+        return QString("%1 %2").arg(ResultBuilder::formatNumber(v, 2)).arg(label);
     };
 
     for (const QString &tt : targets) {
@@ -98,7 +99,7 @@ QList<ResultBuilder::Item> EnergyProvider::convert(double value, const QString &
         it.key = QString("energy-food-%1-%2").arg(kcal).arg(foodName(f));
         it.name = QString("%1 ≈ %2 %3")
             .arg(displayUnit(value, from))
-            .arg(QLocale().toString(portions, 'f', 1))
+            .arg(ResultBuilder::formatNumber(portions, 1))
             .arg(foodName(f));
         it.icon = "firewall-applet";
         it.type = "convert/energy-food";
