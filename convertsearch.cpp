@@ -37,25 +37,25 @@ static QList<ResultBuilder::Item> buildHelp()
     };
     QList<ResultBuilder::Item> items;
     if (zh) {
-        items << mk("help-currency", "汇率：100usd / 100 USD to CNY / 100美元");
-        items << mk("help-unit",     "单位：12inch / 1kg=?斤 / 3km / 100F");
-        items << mk("help-time",     "时区：北京时间 / tokyo now / 纽约时间");
-        items << mk("help-calc",     "计算器：12*8+sqrt(16) / 255 to hex（整数附 HEX/BIN/OCT）");
-        items << mk("help-prog",     "程序员工具：base64 encode hello / md5 hello / 时间戳 / ascii A");
-        items << mk("help-date",     "日期：距 2027-01-01 还有几天 / 2025-01-01 到 2025-12-31 / 今天");
-        items << mk("help-color",    "颜色：#ff8800 / rgb(255,136,0) / hsl(32,100%,50%)");
-        items << mk("help-energy",   "热量：100 kcal（→ 千焦/卡 + 食物份数，控卡必备）");
-        items << mk("help-tip",      "提示：结果点击即复制到剪贴板；输入 help 随时查看本说明");
+        items << mk("help-currency", "汇率：100usd / 100 USD to CNY（省略目标=全币种）");
+        items << mk("help-unit",     "单位：12inch / 3km / 100kg=?斤（省略目标=同类全列）");
+        items << mk("help-time",     "时区：北京时间 / tokyo now / 时间（无城市=世界时钟）");
+        items << mk("help-calc",     "计算器：12*8+sqrt(16) / 255 to hex / 255 进制（全进制）");
+        items << mk("help-prog",     "程序员工具：base64 encode hello / hash hello（MD5/SHA1/SHA256）/ 时间戳 / ascii A");
+        items << mk("help-date",     "日期：2025-01-01 到 2025-12-31 / 今天加30天 / 2026-08-20 星期几");
+        items << mk("help-color",    "颜色：#ff8800 / 红色 / 颜色 随机 / rgb(255,136,0)");
+        items << mk("help-energy",   "热量：100 kcal（→ 千焦/卡 + 食物份数）");
+        items << mk("help-tip",      "提示：结果点击即复制到剪贴板；省略目标单位即列出同类全部可换算单位");
     } else {
-        items << mk("help-currency", "Currency: 100usd / 100 USD to CNY / 100美元");
-        items << mk("help-unit",     "Unit: 12inch / 1kg=?斤 / 3km / 100F");
-        items << mk("help-time",     "Timezone: 北京时间 / tokyo now / 纽约时间");
-        items << mk("help-calc",     "Calculator: 12*8+sqrt(16) / 255 to hex (HEX/BIN/OCT)");
-        items << mk("help-prog",     "Developer: base64 encode hello / md5 hello / 时间戳 / ascii A");
-        items << mk("help-date",     "Date: 距 2027-01-01 还有几天 / 2025-01-01 到 2025-12-31 / 今天");
-        items << mk("help-color",    "Color: #ff8800 / rgb(255,136,0) / hsl(32,100%,50%)");
+        items << mk("help-currency", "Currency: 100usd / 100 USD to CNY (omit target = all currencies)");
+        items << mk("help-unit",     "Unit: 12inch / 3km / 100kg=?斤 (omit target = all in class)");
+        items << mk("help-time",     "Timezone: 北京时间 / tokyo now / time (no city = world clock)");
+        items << mk("help-calc",     "Calculator: 12*8+sqrt(16) / 255 to hex / 255 base (all bases)");
+        items << mk("help-prog",     "Developer: base64 encode hello / hash hello (MD5/SHA1/SHA256) / timestamp / ascii A");
+        items << mk("help-date",     "Date: 2025-01-01 到 2025-12-31 / today+30days / 2026-08-20 weekday");
+        items << mk("help-color",    "Color: #ff8800 / red / color random / rgb(255,136,0)");
         items << mk("help-energy",   "Energy: 100 kcal (→ kJ/cal + food portions)");
-        items << mk("help-tip",      "Tip: click a result to copy; type 'help' anytime");
+        items << mk("help-tip",      "Tip: click a result to copy; omit target unit to list all convertible units");
     }
     return items;
 }
