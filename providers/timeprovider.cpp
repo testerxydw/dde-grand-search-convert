@@ -56,13 +56,10 @@ QString zoneOffsetText(const QTimeZone &tz, const QDateTime &utcNow)
 }
 } // namespace
 
-QList<ResultBuilder::Item> TimeProvider::query(const QString &cityKeyword)
+// 单城市结果卡：目标城市时间 + 与本地时差；空 zoneId 返回空列表。
+static QList<ResultBuilder::Item> oneCity(const QString &zoneId, bool withHere = false)
 {
     QList<ResultBuilder::Item> items;
-    QString zoneId = findZone(cityKeyword);
-    if (zoneId.isEmpty())
-        return items;
-
     QTimeZone tz(zoneId.toUtf8());
     if (!tz.isValid())
         return items;
@@ -93,8 +90,46 @@ QList<ResultBuilder::Item> TimeProvider::query(const QString &cityKeyword)
         .arg(zoneOffsetText(tz, utcNow))   // 若需更友好可替换为城市中文名
         .arg(weekday)
         .arg(diffText);
+    if (withHere) {
+        it.name += QString(" · 本地此刻 %1")
+            .arg(QLocale(QLocale::Chinese).toString(here.time(), "HH:mm"));
+    }
     it.icon = "preferences-system-time";
     it.type = "convert/time";
     items.append(it);
+    return items;
+}
+
+// 世界时钟常用城市（无城市词时全列，可展开）
+static const QStringList kWorldCities = {
+    "Asia/Shanghai", "Asia/Tokyo", "America/New_York", "Europe/London",
+    "Europe/Paris", "Australia/Sydney",
+};
+
+QList<ResultBuilder::Item> TimeProvider::query(const QString &cityKeyword)
+{
+    QList<ResultBuilder::Item> items;
+
+    // 无城市词 → 世界时钟全列（本地 + 常用参照城市），并排显示本地此刻
+    if (cityKeyword.trimmed().isEmpty()) {
+        for (const QString &zoneId : kWorldCities)
+            items += oneCity(zoneId, /*withHere=*/true);
+        return items;
+    }
+
+    // 多城市：按空格分隔，逐个返回（支持「东京 纽约 伦敦」）
+    QStringList cities = cityKeyword.split(' ', Qt::SkipEmptyParts);
+    for (const QString &c : cities) {
+        QString zoneId = findZone(c);
+        if (zoneId.isEmpty())
+            continue;
+        items += oneCity(zoneId, /*withHere=*/true);
+    }
+    // 若拆分成多段都没匹配，退回整串匹配一次（如「北京时间」）
+    if (items.isEmpty()) {
+        QString zoneId = findZone(cityKeyword);
+        if (!zoneId.isEmpty())
+            items += oneCity(zoneId, /*withHere=*/true);
+    }
     return items;
 }

@@ -12,6 +12,7 @@
 #include "providers/datetimeprovider.h"
 #include "providers/energyprovider.h"
 #include "providers/programprovider.h"
+#include "providers/timeprovider.h"
 #include "i18n.h"
 
 #include <QCoreApplication>
@@ -163,6 +164,13 @@ static void test_providers()
     // 日期：2025-01-01 到 2025-12-31
     auto d = DateTimeProvider::run("2025-01-01 到 2025-12-31");
     CHECK(!d.isEmpty() && d.first().name.contains("364"), "日期差 364 天");
+
+    // 时区：无城市词 → 世界时钟全列(>=4条)
+    auto world = TimeProvider::query("");
+    CHECK(world.size() >= 4, "时间 无城市词 → 世界时钟全列(>=4条)");
+    // 指定城市 → 单条且含本地此刻
+    auto bj = TimeProvider::query("北京");
+    CHECK(bj.size() == 1 && bj.first().name.contains("本地此刻"), "北京时间 单条并排本地时刻");
 
     // 热量：100 kcal -> 418.40 kj
     auto e = EnergyProvider::convert(100, "kcal", "kj");
