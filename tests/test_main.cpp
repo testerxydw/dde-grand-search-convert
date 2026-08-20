@@ -170,12 +170,26 @@ static void test_providers()
         if (it.type == "convert/calc-pct") hasPct = true;
     CHECK(hasPct, "1/8 → 附百分比");
 
-    // 颜色：#ff8800 -> rgb(255, 136, 0)
+    // 颜色：#ff8800 -> rgb(255, 136, 0) + 互补色
     auto col = ColorProvider::convert("#ff8800");
-    bool has255 = false;
-    for (const auto &it : col)
-        if (it.name.contains("255")) { has255 = true; break; }
+    bool has255 = false, hasComp = false;
+    for (const auto &it : col) {
+        if (it.name.contains("255")) has255 = true;
+        if (it.type == "convert/color-comp") hasComp = true;
+    }
     CHECK(!col.isEmpty() && has255, "#ff8800 -> 255");
+    CHECK(hasComp, "#ff8800 附互补色");
+
+    // 颜色：色名「红色」→ #ff0000
+    auto colRed = ColorProvider::convert("红色");
+    bool hasRedHex = false;
+    for (const auto &it : colRed)
+        if (it.type == "convert/color-hex" && it.name.contains("#ff0000")) hasRedHex = true;
+    CHECK(hasRedHex, "红色 → #ff0000");
+
+    // 颜色：随机 → 三形态全列
+    auto colRnd = ColorProvider::convert("随机");
+    CHECK(!colRnd.isEmpty(), "随机色 有结果");
 
     // 程序：md5 hello
     auto pr = ProgramProvider::run("md5 hello");

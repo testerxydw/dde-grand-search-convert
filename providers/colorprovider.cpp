@@ -5,6 +5,8 @@
 #include "i18n.h"
 
 #include <QRegularExpression>
+#include <QHash>
+#include <QRandomGenerator>
 
 namespace {
 
@@ -14,9 +16,36 @@ static QString colorLabel(const QString &key)
 }
 
 
-
 struct RGB { int r = 0, g = 0, b = 0; };
 struct HSL { int h = 0, s = 0, l = 0; };
+
+// 常见色名 → RGB（中/英文名，用于快捷输入）
+struct NameColor { QString zh; QString en; RGB rgb; };
+static QList<NameColor> namedColors()
+{
+    return {
+        {"红色", "red", {255, 0, 0}}, {"橙色", "orange", {255, 165, 0}},
+        {"黄色", "yellow", {255, 255, 0}}, {"绿色", "green", {0, 128, 0}},
+        {"青色", "cyan", {0, 255, 255}}, {"蓝色", "blue", {0, 0, 255}},
+        {"紫色", "purple", {128, 0, 128}}, {"黑色", "black", {0, 0, 0}},
+        {"白色", "white", {255, 255, 255}}, {"灰色", "gray", {128, 128, 128}},
+        {"粉色", "pink", {255, 192, 203}}, {"棕色", "brown", {165, 42, 42}},
+    };
+}
+
+// 匹配中文/英文色名，命中返回对应 RGB；否则返回 false。
+static bool matchNamedColor(const QString &s, RGB &out)
+{
+    QString lower = s.toLower();
+    for (const NameColor &nc : namedColors()) {
+        if (lower.contains(nc.zh) || lower.contains(nc.en)) {
+            out = nc.rgb;
+            return true;
+        }
+    }
+    return false;
+}
+
 
 QString toHex(const RGB &c)
 {
@@ -79,6 +108,14 @@ RGB hslToRgb(const HSL &c)
     return out;
 }
 
+// 互补色：色相 +180°（保持饱和/亮度）
+RGB complement(const RGB &c)
+{
+    HSL hsl = rgbToHsl(c);
+    hsl.h = (hsl.h + 180) % 360;
+    return hslToRgb(hsl);
+}
+
 } // namespace
 
 QList<ResultBuilder::Item> ColorProvider::convert(const QString &colorRaw)
@@ -88,6 +125,20 @@ QList<ResultBuilder::Item> ColorProvider::convert(const QString &colorRaw)
 
     RGB rgb;
     bool parsed = false;
+
+    // 随机色：颜色 随机 / color random
+    if (s.contains("随机") || s.contains("random")) {
+        rgb.r = QRandomGenerator::global()->bounded(256);
+        rgb.g = QRandomGenerator::global()->bounded(256);
+        rgb.b = QRandomGenerator::global()->bounded(256);
+        parsed = true;
+        s.clear(); // 跳过后续标准串匹配
+    }
+    // 色名快捷：红色 / blue 等 → 预设色板
+    if (!parsed && matchNamedColor(s, rgb)) {
+        parsed = true;
+        s.clear();
+    }
 
     // #rgb 或 #rrggbb
     QRegularExpression hexRe(R"(^#([0-9a-f]{3}|[0-9a-f]{6})$)");
@@ -143,5 +194,12 @@ QList<ResultBuilder::Item> ColorProvider::convert(const QString &colorRaw)
     add("color-rgb", colorLabel("RGB") + ": " + toRgbText(rgb), "convert/color-rgb");
     add("color-hsl", colorLabel("HSL") + QString(": hsl(%1, %2%, %3%)").arg(hsl.h).arg(hsl.s).arg(hsl.l),
         "convert/color-hsl");
+
+    // 互补色参考（辅助配色）
+    RGB comp = complement(rgb);
+    HSL compHsl = rgbToHsl(comp);
+    add("color-comp", QString("互补色: %1  /  %2  /  hsl(%3, %4%, %5%)")
+        .arg(toHex(comp)).arg(toRgbText(comp)).arg(compHsl.h).arg(compHsl.s).arg(compHsl.l),
+        "convert/color-comp");
     return items;
 }

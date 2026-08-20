@@ -220,6 +220,11 @@ Parsed parse(const QString &input)
                 return p;
             }
             Parsed sub = parse(rest);
+            // 递归未识别（如「颜色 随机」「红色」）时回退到触发词类型，rest 作为内容
+            if (sub.type == QueryParser::Type::None) {
+                sub.type = t;
+                sub.text = rest;
+            }
             sub.raw = p.raw; // 保留原始大小写（ascii 等大小写敏感场景）
             return sub;
         }
@@ -314,13 +319,26 @@ Parsed parse(const QString &input)
         return p;
     }
 
-    // 5) 颜色转换：#rgb / #rrggbb / rgb() / hsl()
+    // 5) 颜色转换：#rgb / #rrggbb / rgb() / hsl() / 色名 / 随机
     {
         QString color;
         if (matchColor(s, color)) {
             p.type = Type::Color;
             p.text = color;
             return p;
+        }
+        // 色名/随机色：红/蓝/绿色 或 随机
+        static const QStringList kColorNames = {
+            "红", "橙", "黄", "绿", "青", "蓝", "紫", "黑", "白", "灰",
+            "粉", "棕", "red", "orange", "yellow", "green", "cyan", "blue",
+            "purple", "black", "white", "gray", "pink", "brown", "随机", "random",
+        };
+        for (const QString &n : kColorNames) {
+            if (s.contains(n)) {
+                p.type = Type::Color;
+                p.text = p.raw;
+                return p;
+            }
         }
     }
 
