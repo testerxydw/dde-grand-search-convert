@@ -142,7 +142,7 @@ QList<ResultBuilder::Item> UnitProvider::convert(double value, const QString &fr
         if (!to.isEmpty() && (norm(to) == "c" || norm(to) == "f" || norm(to) == "k"))
             targets << norm(to);
         else
-            targets << "c" << "f" << "k";
+            targets << "c" << "f" << "k"; // 温度仅三标度，全列
         for (const QString &ts : targets) {
             if (ts == f) continue;
             double out = 0.0;
@@ -161,6 +161,16 @@ QList<ResultBuilder::Item> UnitProvider::convert(double value, const QString &fr
         return items;
     }
 
+    // 每类别全部可转换单位（省略目标时全列，不截断）
+    static const QHash<QString, QStringList> kCategoryTargets = {
+        {"len",   {"m", "cm", "km", "inch", "feet", "yard", "mile", "li", "chi", "cun"}},
+        {"mass",  {"kg", "g", "mg", "lb", "oz", "斤", "两", "吨", "t"}},
+        {"area",  {"m2", "km2", "cm2", "公顷", "亩", "acre"}},
+        {"vol",   {"l", "ml", "gal", "m3"}},
+        {"speed", {"kmh", "mph", "mps", "节", "mach"}},
+        {"data",  {"b", "kb", "mb", "gb", "tb", "bit", "kbit", "mbit", "gbit"}},
+    };
+
     // 线性单位：确定类别并求系数
     auto tryCategory = [&](const QString &cat,
                            std::function<double(const QString &, bool &)> factorFn,
@@ -170,7 +180,7 @@ QList<ResultBuilder::Item> UnitProvider::convert(double value, const QString &fr
         if (!okF) return false;
         QStringList targets;
         if (!to.isEmpty()) targets << to;
-        else targets << "m" << "cm" << "km" << "inch" << "feet" << "mile"; // 默认展示常见单位
+        else targets = kCategoryTargets.value(cat); // 省略目标 → 该类别全列
         for (const QString &tt : targets) {
             bool okT = false;
             double tf = factorFn(tt, okT);

@@ -109,6 +109,18 @@ static void test_providers()
     auto kg = UnitProvider::convert(100, "kg", "斤");
     CHECK(!kg.isEmpty() && kg.first().name.contains("200"), "100kg=200斤");
 
+    // 省略目标单位 → 同类全列（重量类含 斤/两/g/lb 等，条数应 >= 5）
+    auto kgAll = UnitProvider::convert(100, "kg", "");
+    CHECK(kgAll.size() >= 5, "100kg 省略目标 → 同类全列(>=5条)");
+    bool hasJin = false, hasLb = false;
+    for (const auto &it : kgAll) {
+        if (it.name.contains("斤")) hasJin = true;
+        if (it.name.contains("lb") || it.name.contains("磅")) hasLb = true;
+    }
+    CHECK(hasJin && hasLb, "100kg 全列含 斤 与 磅");
+    // 指定目标仍精确单条
+    CHECK(UnitProvider::convert(100, "kg", "斤").size() == 1, "100kg=斤 精确单条");
+
     // 数字时间戳：1690000000 -> 2023-07-22
     auto ts = ProgramProvider::run("1690000000");
     CHECK(!ts.isEmpty() && ts.first().name.contains("2023-07-22"),
