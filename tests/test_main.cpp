@@ -167,6 +167,16 @@ static void test_providers()
     // 热量：100 kcal -> 418.40 kj
     auto e = EnergyProvider::convert(100, "kcal", "kj");
     CHECK(!e.isEmpty() && e.first().name.contains("418.4"), "100kcal=418.4kj");
+
+    // 热量：省略目标 → kcal/kj/cal/j 互转（剔除自身 3 条）+ 食物份数
+    auto eAll = EnergyProvider::convert(100, "kcal", "");
+    int unitCount = 0, foodCount = 0;
+    for (const auto &it : eAll) {
+        if (it.type == "convert/energy-unit") unitCount++;
+        else if (it.type == "convert/energy-food") foodCount++;
+    }
+    CHECK(unitCount >= 3, "100kcal 省略目标 → 热量全列(>=3条互转)");
+    CHECK(foodCount >= 1, "100kcal 省略目标 → 附食物份数");
 }
 
 static void test_i18n()
