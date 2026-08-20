@@ -209,6 +209,14 @@ static void test_providers()
     auto d = DateTimeProvider::run("2025-01-01 到 2025-12-31");
     CHECK(!d.isEmpty() && d.first().name.contains("364"), "日期差 364 天");
 
+    // 日期：星期几查询
+    auto dw = DateTimeProvider::run("2026-08-20 星期几");
+    CHECK(!dw.isEmpty() && dw.first().name.contains("星期"), "2026-08-20 星期几");
+
+    // 日期：今天加30天 → 偏移
+    auto dof = DateTimeProvider::run("今天加30天");
+    CHECK(!dof.isEmpty() && dof.first().type == "convert/date-offset", "今天加30天 偏移");
+
     // 时区：无城市词 → 世界时钟全列(>=4条)
     auto world = TimeProvider::query("");
     CHECK(world.size() >= 4, "时间 无城市词 → 世界时钟全列(>=4条)");

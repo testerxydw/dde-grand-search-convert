@@ -76,6 +76,60 @@ QList<ResultBuilder::Item> DateTimeProvider::run(const QString &text)
     QDate today = QDate::currentDate();
     QString lower = text.toLower();
 
+    // 情况A：日期偏移（+N天 / 加N天 / -N天），如「今天加30天」「2026-08-20 +100天」
+    {
+        QRegularExpression offsetRe(R"((今天|明天|昨天|\d{4}[-./]\d{1,2}[-./]\d{1,2})\s*(?:加|[+-])\s*(\d+)\s*(?:天|日))");
+        QRegularExpressionMatch om = offsetRe.match(lower);
+        if (om.hasMatch()) {
+            QDate base = today;
+            QString baseStr = om.captured(1);
+            if (baseStr == "明天") base = today.addDays(1);
+            else if (baseStr == "昨天") base = today.addDays(-1);
+            else if (baseStr != "今天") {
+                QRegularExpression dRe(R"((\d{4})[-./](\d{1,2})[-./](\d{1,2}))");
+                QRegularExpressionMatch dm = dRe.match(baseStr);
+                if (dm.hasMatch()) base = QDate(dm.captured(1).toInt(), dm.captured(2).toInt(), dm.captured(3).toInt());
+            }
+            int delta = om.captured(2).toInt();
+            // 判断方向：+/加 = 加，-/减 = 减
+            int op = lower.contains("加") || om.captured(0).contains('+') ? 1 : -1;
+            QDate target = base.addDays(delta * op);
+            ResultBuilder::Item it;
+            it.key = "date-offset";
+            it.name = QString("%1 %2 %3天 = %4")
+                .arg(weekdayText(base))
+                .arg(om.captured(0).contains('-') ? "减" : "加")
+                .arg(delta)
+                .arg(weekdayText(target));
+            it.icon = "office-calendar"; it.type = "convert/date-offset";
+            items.append(it);
+            return items;
+        }
+    }
+
+    // 情况B：星期几查询，如「2026-08-20 星期几」「2026-08-20 weekday」
+    {
+        bool askWeekday = lower.contains("星期几") || lower.contains("周几")
+                          || lower.contains("weekday") || lower.contains("whatday");
+        if (askWeekday && dates.size() >= 1) {
+            ResultBuilder::Item it;
+            it.key = "date-weekday";
+            it.name = weekdayText(dates[0]);
+            it.icon = "office-calendar"; it.type = "convert/date-weekday";
+            items.append(it);
+            return items;
+        }
+        // 单独「星期几」不带日期 → 今天星期几
+        if (askWeekday && dates.isEmpty()) {
+            ResultBuilder::Item it;
+            it.key = "date-weekday";
+            it.name = weekdayText(today);
+            it.icon = "office-calendar"; it.type = "convert/date-weekday";
+            items.append(it);
+            return items;
+        }
+    }
+
     // 情况0：完整日期时间 → 时间戳（秒级 / 毫秒级）
     // 例如「2026年08月20日 15:03:28」「2026-08-20 15:03:28」。
     QDateTime dt = extractDateTime(text);

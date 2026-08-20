@@ -95,6 +95,7 @@ static bool containsProgramKeyword(const QString &s)
 static const QStringList kDateKeywords = {
     "倒数日", "倒计时", "距", "还有几天", "生日", "日期差", "相隔", "相差", "daysuntil",
     "countdown", "days", "距离", "几天后", "date", "today", "今天", "明天", "昨天",
+    "星期几", "周几", "weekday", "whatday", "加天",
 };
 
 static bool containsDateKeyword(const QString &s)
