@@ -248,9 +248,53 @@ QList<ResultBuilder::Item> CalcProvider::eval(const QString &exprRaw)
         }
     }
 
+    // 进制一次全给：数值 + 进制/base → DEC/HEX/BIN/OCT 全列（不舍上限）
+    {
+        QRegularExpression allBaseRe(R"((0x[0-9a-f]+|0b[01]+|0o[0-7]+|\d+(?:\.\d+)?)\s*(?:进制|base))");
+        QRegularExpressionMatch ab = allBaseRe.match(s);
+        if (ab.hasMatch()) {
+            QString valStr = ab.captured(1);
+            bool conv = true;
+            qint64 val = 0;
+            if (valStr.startsWith("0x")) val = valStr.mid(2).toLongLong(&conv, 16);
+            else if (valStr.startsWith("0b")) val = valStr.mid(2).toLongLong(&conv, 2);
+            else if (valStr.startsWith("0o")) val = valStr.mid(2).toLongLong(&conv, 8);
+            else val = valStr.toLongLong(&conv);
+            if (conv) {
+                ResultBuilder::Item d, h, b, o;
+                d.key = "calc-base-dec"; d.name = baseLabel("DEC") + QString(": %1").arg(val);
+                d.icon = "accessories-calculator"; d.type = "convert/calc-base";
+                h.key = "calc-base-hex"; h.name = baseLabel("HEX") + QString(": 0x%1").arg(val, 0, 16);
+                h.icon = "accessories-calculator"; h.type = "convert/calc-base";
+                b.key = "calc-base-bin"; b.name = baseLabel("BIN") + QString(": 0b%1").arg(QString(val ? QString::number(val, 2) : "0"));
+                b.icon = "accessories-calculator"; b.type = "convert/calc-base";
+                o.key = "calc-base-oct"; o.name = baseLabel("OCT") + QString(": 0o%1").arg(val, 0, 8);
+                o.icon = "accessories-calculator"; o.type = "convert/calc-base";
+                items << d << h << b << o;
+                return items;
+            }
+        }
+    }
+
     // 普通算术/函数求值
     double out = 0.0;
     if (compute(s, out)) {
+        // 除零/域错误等产生非有限结果 → 友好错误卡
+        if (!std::isfinite(out)) {
+            ResultBuilder::Item err;
+            err.key = "calc-error";
+            err.icon = "accessories-calculator";
+            err.type = "convert/calc-error";
+            if (s.contains('/')) {
+                err.name = "无法计算：除数不能为 0";
+                if (!I18n::isChinese()) err.name = "Cannot compute: division by zero";
+            } else {
+                err.name = "无法计算：结果超出范围";
+                if (!I18n::isChinese()) err.name = "Cannot compute: result out of range";
+            }
+            items.append(err);
+            return items;
+        }
         bool isInt = std::fabs(out - std::round(out)) < 1e-9;
         qint64 iv = (qint64)std::round(out);
         // 主结果
@@ -273,9 +317,34 @@ QList<ResultBuilder::Item> CalcProvider::eval(const QString &exprRaw)
             o.key = "calc-oct"; o.name = baseLabel("OCT") + QString(": 0o%1").arg(iv, 0, 8);
             o.icon = "accessories-calculator"; o.type = "convert/calc-oct";
             items.append(h); items.append(b); items.append(o);
+        } else {
+            // 小数增强：附科学计数法 + 百分比（易用性）
+            ResultBuilder::Item sci, pct;
+            sci.key = "calc-sci"; sci.name = QString("科学计数: %1").arg(QLocale().toString(out, 'g', 12).replace('e', "e"));
+            sci.icon = "accessories-calculator"; sci.type = "convert/calc-sci";
+            pct.key = "calc-pct"; pct.name = QString("百分比: %1%").arg(ResultBuilder::formatNumber(out * 100.0, 2));
+            pct.icon = "accessories-calculator"; pct.type = "convert/calc-pct";
+            items << sci << pct;
         }
         return items;
     }
 
+    // 求值失败 → 友好提示卡（而非静默），区分常见错误
+    ResultBuilder::Item err;
+    err.key = "calc-error";
+    err.icon = "accessories-calculator";
+    err.type = "convert/calc-error";
+    if (s.contains('/')) {
+        err.name = "无法计算：除数不能为 0";
+        if (!I18n::isChinese()) err.name = "Cannot compute: division by zero";
+    } else if (s.contains("sqrt")) {
+        err.name = "无法计算：负数没有实数平方根";
+        if (!I18n::isChinese()) err.name = "Cannot compute: sqrt of a negative number";
+    } else {
+        err.name = QString("不支持的表达式：%1（可用函数 sqrt/sin/cos/log/ln/abs 等，输入 help 查看）").arg(exprRaw);
+        if (!I18n::isChinese())
+            err.name = QString("Unsupported expression: %1 (functions: sqrt/sin/cos/log/ln/abs; type help)").arg(exprRaw);
+    }
+    items.append(err);
     return items;
 }

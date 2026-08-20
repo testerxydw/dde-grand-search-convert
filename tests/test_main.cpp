@@ -149,6 +149,27 @@ static void test_providers()
     auto c = CalcProvider::eval("100");
     CHECK(!c.isEmpty(), "100 有计算结果");
 
+    // 计算器：进制全给 → DEC/HEX/BIN/OCT 四条
+    auto cb = CalcProvider::eval("255 进制");
+    int baseCount = 0;
+    for (const auto &it : cb)
+        if (it.type == "convert/calc-base") baseCount++;
+    CHECK(baseCount == 4, "255 进制 → 全进制四条");
+
+    // 计算器：失败给提示卡（除零）
+    auto ce = CalcProvider::eval("1/0");
+    bool hasErr = false;
+    for (const auto &it : ce)
+        if (it.type == "convert/calc-error") hasErr = true;
+    CHECK(hasErr, "1/0 → 友好错误提示卡");
+
+    // 计算器：小数增强含百分比
+    auto cf = CalcProvider::eval("1/8");
+    bool hasPct = false;
+    for (const auto &it : cf)
+        if (it.type == "convert/calc-pct") hasPct = true;
+    CHECK(hasPct, "1/8 → 附百分比");
+
     // 颜色：#ff8800 -> rgb(255, 136, 0)
     auto col = ColorProvider::convert("#ff8800");
     bool has255 = false;

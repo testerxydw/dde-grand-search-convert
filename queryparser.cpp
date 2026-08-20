@@ -153,7 +153,7 @@ static const QHash<QueryParser::Type, QStringList> kTriggerWords = {
     {QueryParser::Type::Currency, {"汇率", "换汇", "currency", "exchange"}},
     {QueryParser::Type::Unit,     {"换算", "单位", "convert", "unit"}},
     {QueryParser::Type::Time,     {"时间", "时区", "time", "timezone", "now", "现在", "现在几点", "几点"}},
-    {QueryParser::Type::Calc,     {"计算", "算", "calc", "calculate"}},
+    {QueryParser::Type::Calc,     {"计算", "算", "calc", "calculate", "进制", "base"}},
     {QueryParser::Type::Program,  {"编码", "哈希", "时间戳", "encode", "hash", "timestamp"}},
     {QueryParser::Type::DateTime, {"日期", "倒数", "date", "countdown",
                                    "转时间戳", "时间戳转", "to-timestamp", "timestamp-of"}},
