@@ -164,18 +164,28 @@ static const QHash<QueryParser::Type, QStringList> kTriggerWords = {
 // 若 input 以某触发词 + 分隔符开头，返回对应类型与去掉前缀后的剩余内容；否则返回 None。
 static QueryParser::Type matchTrigger(const QString &s, QString &rest)
 {
+    rest.clear();
+    // 收集所有前缀命中的触发词，选「最长」者优先，避免 `时间` 误吞 `时间戳` 等前缀包含冲突。
+    int bestLen = -1;
+    QueryParser::Type bestType = QueryParser::Type::None;
+    QString bestRest;
     for (auto it = kTriggerWords.begin(); it != kTriggerWords.end(); ++it) {
         for (const QString &kw : it.value()) {
-            if (s.startsWith(kw)) {
+            if (s.startsWith(kw) && kw.size() > bestLen) {
                 QString r = s.mid(kw.size()).trimmed();
                 // 允许触发词后紧跟分隔符 : ： ? 再接内容
                 if (r.startsWith(QLatin1Char(':')) || r.startsWith(QLatin1Char('：'))
                     || r.startsWith(QLatin1Char('?')))
                     r = r.mid(1).trimmed();
-                rest = r;
-                return it.key();
+                bestLen = kw.size();
+                bestType = it.key();
+                bestRest = r;
             }
         }
+    }
+    if (bestType != QueryParser::Type::None) {
+        rest = bestRest;
+        return bestType;
     }
     return QueryParser::Type::None;
 }

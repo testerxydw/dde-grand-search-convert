@@ -13,8 +13,10 @@
 #include <QUrl>
 #include <QUrlQuery>
 
+// 省略目标币种时全列（与 i18n.cpp currencyTable 对齐，覆盖全部已支持币种）
 const QStringList CurrencyProvider::kDefaultTargets = {
-    "CNY", "USD", "EUR", "JPY", "GBP", "HKD",
+    "CNY", "USD", "EUR", "JPY", "GBP", "HKD", "KRW", "RUB",
+    "AUD", "CAD", "SGD", "THB", "INR", "TWD", "MOP",
 };
 
 static QString currencyDisplay(const QString &code)
@@ -23,9 +25,12 @@ static QString currencyDisplay(const QString &code)
 }
 
 // 内置静态汇率（相对 CNY），作为离线降级。数值为示意，联网后会被覆盖。
+// 覆盖全部已支持币种，保证「省略目标=全币种列」离线也能出完整结果。
 const QHash<QString, double> kStaticRates = {
     {"CNY", 1.0}, {"USD", 7.25}, {"EUR", 7.85}, {"JPY", 0.048},
-    {"GBP", 9.20}, {"HKD", 0.93}, {"KRW", 0.0053},
+    {"GBP", 9.20}, {"HKD", 0.93}, {"KRW", 0.0053}, {"RUB", 0.083},
+    {"AUD", 4.80}, {"CAD", 5.30}, {"SGD", 5.40}, {"THB", 0.20},
+    {"INR", 0.087}, {"TWD", 0.225}, {"MOP", 0.90},
 };
 
 CurrencyProvider::CurrencyProvider(QObject *parent)

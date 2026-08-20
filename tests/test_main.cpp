@@ -16,6 +16,7 @@
 
 #include <QCoreApplication>
 #include <QList>
+#include <QRegularExpression>
 #include <cstdio>
 #include <cstdlib>
 
@@ -95,6 +96,22 @@ static void test_parser()
 
 static void test_providers()
 {
+    // 货币：省略目标 → 全币种列（>=10 条，含 USD/JPY，自身 CNY 剔除）
+    CurrencyProvider curProv;
+    auto cur = curProv.convert(100, "CNY", "");
+    CHECK(cur.size() >= 10, "100cny 省略目标 → 全币种列(>=10条)");
+    bool hasUsd = false, hasJpy = false, hasSelfTarget = false;
+    for (const auto &it : cur) {
+        if (it.name.contains("USD") || it.name.contains("美元")) hasUsd = true;
+        if (it.name.contains("JPY") || it.name.contains("日元")) hasJpy = true;
+        // 来源已是 CNY；若某条"目标"也是 CNY（即 = X CNY(...) 形态）说明未剔除自身
+        if (QRegularExpression("= [\\d,.]+ CNY").match(it.name).hasMatch()) hasSelfTarget = true;
+    }
+    CHECK(hasUsd && hasJpy, "100cny 全列含 USD/JPY");
+    CHECK(!hasSelfTarget, "100cny 全列剔除自身 CNY(无 = X CNY 目标)");
+    // 指定目标仍精确单条
+    CHECK(curProv.convert(100, "USD", "CNY").size() == 1, "100usd=cny 精确单条");
+
     // 单位：1kg = 2 斤（近似）
     auto u = UnitProvider::convert(1, "kg", "斤");
     CHECK(!u.isEmpty(), "1kg=?斤 有结果");
