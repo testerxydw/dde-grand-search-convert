@@ -5,6 +5,7 @@
 
 #include "queryparser.h"
 #include "resultbuilder.h"
+#include "convertsearch.h"
 #include "providers/unitprovider.h"
 #include "providers/currencyprovider.h"
 #include "providers/calcprovider.h"
@@ -15,6 +16,8 @@
 #include "providers/timeprovider.h"
 #include "i18n.h"
 
+#include <QJsonDocument>
+#include <QJsonArray>
 #include <QCoreApplication>
 #include <QList>
 #include <QRegularExpression>
@@ -271,6 +274,61 @@ static void test_providers()
     CHECK(foodCount >= 1, "100kcal 省略目标 → 附食物份数");
 }
 
+// ConvertSearch 层：DBus 入参边界与返回结构（action 剪贴板链路留功能测试）
+static void test_convertsearch()
+{
+    ConvertSearch cs;
+
+    auto isWellFormed = [](const QString &json) {
+        return QJsonDocument::fromJson(json.toUtf8()).object().value("ver").toString() == "1.0";
+    };
+    auto hasGroup = [](const QString &json) {
+        return !QJsonDocument::fromJson(json.toUtf8()).object().value("cont").toArray().isEmpty();
+    };
+
+    // 非法 JSON：返回空结果而非崩溃
+    CHECK(isWellFormed(cs.search("not-json")), "坏 JSON -> 合法空结果");
+    // 缺 cont：空结果
+    CHECK(isWellFormed(cs.search("{\"mID\":\"u0\"}")), "缺 cont -> 合法空结果");
+    CHECK(!hasGroup(cs.search("{\"mID\":\"u0\"}")), "缺 cont -> 无组");
+    // 缺 mID：解析失败 -> 空结果
+    CHECK(isWellFormed(cs.search("{\"cont\":\"12*8\"}")), "缺 mID -> 合法空结果");
+
+    // 正常链路：help / 未识别 / 计算
+    CHECK(hasGroup(cs.search("{\"mID\":\"u1\",\"cont\":\"help\"}")), "help -> 有组");
+    CHECK(hasGroup(cs.search("{\"mID\":\"u2\",\"cont\":\"乱输入zzz\"}")), "未识别 -> 提示卡组");
+    const QString calcOut = cs.search("{\"mID\":\"u3\",\"cont\":\"12*8\"}");
+    CHECK(hasGroup(calcOut), "12*8 -> 有组");
+    CHECK(calcOut.contains("= 96"), "12*8 -> 结果含 96");
+    // 结果 JSON 可解析且 mID 回传
+    CHECK(QJsonDocument::fromJson(calcOut.toUtf8()).object().value("mID").toString() == "u3",
+          "mID 回传一致");
+
+    // 超长输入：不崩、返回合法 JSON（R4 求值器上限）
+    QString longCont(100 * 1024, '9');
+    CHECK(isWellFormed(cs.search(QString("{\"mID\":\"u4\",\"cont\":\"%1\"}").arg(longCont))),
+          "100KB 超长数字 -> 合法返回");
+    // 深嵌套表达式：不崩
+    QString deep(500, '(');
+    deep += "1";
+    deep += QString(500, ')');
+    CHECK(isWellFormed(cs.search(QString("{\"mID\":\"u5\",\"cont\":\"%1\"}").arg(deep))),
+          "500 层嵌套 -> 合法返回");
+
+    // stop / action 负路径
+    CHECK(cs.stop("{\"mID\":\"u1\"}") == true, "stop 已知 mID -> true");
+    CHECK(cs.action("{\"mID\":\"u1\",\"action\":\"openitem\",\"item\":\"no-such-item\"}") == false,
+          "action 未知 item -> false");
+    CHECK(cs.action("bad") == false, "action 坏 JSON -> false");
+    CHECK(cs.stop("bad") == false, "stop 坏 JSON -> false");
+
+    // action 正路径：同进程缓存查找 + 剪贴板写入（deepin DBus 回退）
+    cs.search("{\"mID\":\"ac1\",\"cont\":\"1kg=?斤\"}");
+    const bool copied = cs.action("{\"mID\":\"ac1\",\"action\":\"openitem\",\"item\":\"unit-mass-1-斤\"}");
+    CHECK(copied, "action openitem 已知 item -> true");
+    cs.stop("{\"mID\":\"ac1\"}");
+}
+
 static void test_i18n()
 {
     // 单位名至少含原单位
@@ -282,9 +340,10 @@ static void test_i18n()
 int main(int argc, char **argv)
 {
     QCoreApplication a(argc, argv);
-    printf("=== 转换器插件单元测试 ===\n");
+    printf("=== 转换器插件单元测试 ===\n"); fflush(stderr);
     test_parser();
     test_providers();
+    test_convertsearch();
     test_i18n();
     printf("\n通过 %d / 失败 %d\n", g_pass, g_fail);
     return g_fail == 0 ? 0 : 1;
