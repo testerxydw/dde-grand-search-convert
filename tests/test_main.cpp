@@ -93,6 +93,24 @@ static void test_parser()
     // 触发词 + 冒号分隔
     p = QueryParser::parse("颜色:#ff8800");
     CHECK(p.type == QueryParser::Type::Color, "颜色:#ff8800 -> Color");
+
+    // 回归：Latin 触发词整词边界（base64 不应被 calc 触发词 base 吞掉）
+    p = QueryParser::parse("base64 encode hello");
+    CHECK(p.type == QueryParser::Type::Program, "base64 encode hello -> Program");
+    CHECK(p.text == "base64 encode hello", "base64 encode hello 保留原文");
+
+    // 回归：触发词回退须保留完整原文（hash 动作词不可丢）
+    p = QueryParser::parse("hash hello");
+    CHECK(p.type == QueryParser::Type::Program, "hash hello -> Program");
+    CHECK(p.text == "hash hello", "hash hello 回退时保留原文");
+
+    // 回归：中文触发词连写用法不受 Latin 边界影响
+    p = QueryParser::parse("算12*8");
+    CHECK(p.type == QueryParser::Type::Calc, "算12*8 -> Calc");
+
+    // 回归：触发词 + 分隔符后仍可命中（base: 进制转换）
+    p = QueryParser::parse("base:255 to hex");
+    CHECK(p.type == QueryParser::Type::Calc, "base:255 to hex -> Calc");
 }
 
 static void test_providers()
