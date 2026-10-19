@@ -329,6 +329,61 @@ static void test_convertsearch()
     cs.stop("{\"mID\":\"ac1\"}");
 }
 
+// Sourcery PR 评审 10 项修复的回归断言
+static void test_sourcery_fixes()
+{
+    // H1 速度单位：100km/h 不再被截断为 km（长度）
+    auto p = QueryParser::parse("100km/h");
+    CHECK(p.type == QueryParser::Type::Unit && p.from == "km/h", "100km/h from=km/h");
+    auto spd = UnitProvider::convert(100, "km/h", "");
+    CHECK(!spd.isEmpty(), "100km/h 有速度转换结果");
+
+    // H2 负温度：-5c 保留符号；5c 原行为不变
+    p = QueryParser::parse("-5c");
+    CHECK(p.type == QueryParser::Type::Unit && p.value == -5.0, "-5c value=-5");
+    p = QueryParser::parse("5c");
+    CHECK(p.type == QueryParser::Type::Unit && p.value == 5.0, "5c value=5（回归）");
+    auto negT = UnitProvider::convert(-5, "c", "f");
+    CHECK(!negT.isEmpty() && negT.first().name.contains("23"), "-5c=23°F");
+
+    // M5 新增币种别名：aud/卢布 可识别
+    p = QueryParser::parse("100aud=?usd");
+    CHECK(p.type == QueryParser::Type::Currency && p.from == "AUD" && p.to == "USD",
+          "100aud=?usd AUD->USD");
+    p = QueryParser::parse("100卢布");
+    CHECK(p.type == QueryParser::Type::Currency && p.from == "RUB", "100卢布 -> RUB");
+
+    // M6 畸形表达式尾部：不返回前缀结果，改给错误卡
+    auto bad = CalcProvider::eval("12*8 abc");
+    CHECK(bad.size() == 1 && bad.first().type == "convert/calc-error", "12*8 abc -> 错误卡");
+
+    // M3 大整数结果：超 qint64 范围按浮点展示（不崩、无 UB 值；QLocale 指数为 E/e）
+    auto big = CalcProvider::eval("9223372036854775807*9");
+    CHECK(!big.isEmpty() && (big.first().name.contains("E+") || big.first().name.contains("e+")),
+          "超范围结果按科学计数展示");
+
+    // M7 URL 解码：UTF-8 多字节保真
+    auto url = ProgramProvider::run("url decode %E4%B8%AD");
+    CHECK(!url.isEmpty() && url.first().name.contains("中"), "url decode 保留中文");
+
+    // M8 ASCII 非范围字符：如实报 Unicode 码点，不假报码值
+    auto asc = ProgramProvider::run("ascii 中");
+    CHECK(!asc.isEmpty() && asc.first().name.contains("U+4E2D"), "ascii 中 -> U+4E2D");
+    // 回归：Latin1 单字符仍给码值
+    auto ascA = ProgramProvider::run("ascii A");
+    CHECK(!ascA.isEmpty() && ascA.first().name.contains("65"), "ascii A -> 65（回归）");
+
+    // M9 无效日期星期查询：不回退今天
+    auto wd = DateTimeProvider::run("2026-02-30 星期几");
+    CHECK(!wd.isEmpty() && wd.first().name.contains("无法识别"), "2026-02-30 星期几 -> 报无效");
+
+    // M10 大写命令：MD5/ASCII 均有结果
+    auto h = ProgramProvider::run("MD5 hello");
+    CHECK(!h.isEmpty() && h.first().name.startsWith("MD5:"), "MD5 hello 有结果");
+    auto ha = ProgramProvider::run("ASCII A");
+    CHECK(!ha.isEmpty() && ha.first().name.contains("65"), "ASCII A 有结果");
+}
+
 static void test_i18n()
 {
     // 单位名至少含原单位
@@ -344,6 +399,7 @@ int main(int argc, char **argv)
     test_parser();
     test_providers();
     test_convertsearch();
+    test_sourcery_fixes();
     test_i18n();
     printf("\n通过 %d / 失败 %d\n", g_pass, g_fail);
     return g_fail == 0 ? 0 : 1;
